@@ -1,7 +1,5 @@
--- Create a frame to listen for events
 local f = CreateFrame("Frame")
 
--- Table to remember which quests vi allerede har ding'et for
 local fullyCompleted = {}
 
 f:RegisterEvent("QUEST_LOG_UPDATE")
