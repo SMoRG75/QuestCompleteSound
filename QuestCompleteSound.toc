@@ -1,7 +1,7 @@
 ## Interface: 110200
 ## Title: QuestCompleteSound
 ## Notes: Plays a sound when a quest is completed.
-## Author: Smorg
+## Author: SMoRG75
 ## Version: 1.0.0
 ## RequiredDeps:
 ## X-Curse-Project-ID: 999999
