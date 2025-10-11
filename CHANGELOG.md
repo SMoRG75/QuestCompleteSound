@@ -1,28 +1,17 @@
-v1.1.0 — Auto-Tracking & UI Improvements
-✨ New Features
+✨ Feature Highlights
+v1.2 — Auto-Tracking & UI Improvements
 
-Auto-Tracking (optional)
-Added /qcs autotrack on|off to automatically track newly accepted quests.
+🔊 Quest Complete Sound
+Plays a satisfying sound when all quest objectives are done — you’ll know instantly when it’s time to turn in!
 
-Works on both Retail and Classic clients.
+🧭 Optional Auto-Tracking
+Automatically track any quest you accept. Toggle with:
+/qcs autotrack on|off
 
-Persists between sessions (via SavedVariables).
+💬 Customizable Splash Screen
+Choose whether QCS greets you on login with a version summary.
+/qcs splash on|off
 
-Debug Mode
-Added /qcs debugtrack to display detailed API tracking attempts in chat — useful for troubleshooting.
-
-🧭 Enhancements
-
-Added /qcs help with a clean, color-coded overview of all commands.
-
-Added automatic version detection from .toc.
-
-Startup message now shows addon version and AutoTrack status.
-
-Chat messages improved with icons and consistent formatting for a more polished look.
-
-🐛 Fixes
-
-Improved quest tracking reliability by adding retry logic and better API compatibility.
-
-Prevented redundant sound triggers when objectives update rapidly.
+🧰 Easy Debug & Reset Tools
+Check your quest tracker or reset settings anytime:
+/qcs debug, /qcs reset

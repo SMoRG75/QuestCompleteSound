@@ -1,10 +1,10 @@
 ## Interface: 110205
 ## Title: QuestCompleteSound
-## Notes: Plays a sound when all objectives of a quest are completed. Includes optional auto-tracking and debug tools.
+## Notes: Plays a sound when all quest objectives are completed. Includes optional auto-tracking and debug tools.
 ## Author: SMoRG75
-## Version: 1.1.0
+## Version: 1.2
 ## IconTexture: Interface\AddOns\QuestCompleteSound\qcs
-## SavedVariables: QCS_AutoTrack
+## SavedVariables: QCS_AutoTrack, QCS_DebugTrack, QCS_ShowSplash
 ## X-Curse-Project-ID: 1354943
 ## X-Category: Quests & Leveling
 ## X-License: MIT
