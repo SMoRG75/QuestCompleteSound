@@ -35,19 +35,48 @@ local function QCS_GetVersion()
     end
 end
 
-------------------------------------------------------------
--- QCS_TryAutoTrack: Safely adds quest to tracker
-------------------------------------------------------------
-local function QCS_TryAutoTrack(questID, retries)
-    if QCS_DebugTrack then
-        print("|cff33ff99QCS Debug:|r Attempting to track quest ID:", questID)
+-- Helper: detect non-trackable quests (bonus/task) and world quests
+local function QCS_HandleTrackableTypes(questID)
+    -- Bonus objectives / task quests: don't try to add a watch (Blizzard handles these automatically)
+    if C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(questID) then
+        if QCS_DebugTrack then
+            print("|cff9999ff[QCS Debug]|r Skipping task/bonus objective:", questID)
+        end
+        return "skip"
     end
 
+    -- World quests: use the correct API if available
+    if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
+        if C_QuestLog.AddWorldQuestWatch then
+            local ok = pcall(function() C_QuestLog.AddWorldQuestWatch(questID) end)
+            if ok then
+                if QCS_DebugTrack then
+                    print("|cff9999ff[QCS Debug]|r Added world quest watch:", questID)
+                end
+                return "done"
+            end
+        end
+        if QCS_DebugTrack then
+            print("|cff9999ff[QCS Debug]|r Could not add world quest watch:", questID)
+        end
+        return "skip"
+    end
+
+    return "normal" -- regular quest, OK to track
+end
+
+-- Updated, safe autotrack
+local function QCS_TryAutoTrack(questID, retries)
     if not questID then return end
     retries = retries or 0
 
     if retries > 5 then
         print("|cffff0000QCS:|r Failed to auto-track quest after multiple attempts:", questID)
+        return
+    end
+
+    local mode = QCS_HandleTrackableTypes(questID)
+    if mode == "skip" or mode == "done" then
         return
     end
 
@@ -57,26 +86,35 @@ local function QCS_TryAutoTrack(questID, retries)
         return
     end
 
-    if C_QuestLog.GetQuestWatchType(questID) then return end
-
-    local success
-    if Enum and Enum.QuestWatchType and Enum.QuestWatchType.Automatic then
-        local ok = pcall(function()
-            success = C_QuestLog.AddQuestWatch(questID, Enum.QuestWatchType.Automatic)
-        end)
-        if not ok then
-            success = C_QuestLog.AddQuestWatch(questID)
+    -- Already tracked?
+    if C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(questID) then
+        if QCS_DebugTrack then
+            print("|cff9999ff[QCS Debug]|r Already tracked:", title)
         end
-    else
-        success = C_QuestLog.AddQuestWatch(questID)
+        return
     end
 
-    if not success then AddQuestWatch(questID) end
+    if QCS_DebugTrack then
+        print("|cff9999ff[QCS Debug]|r Attempting to track:", title)
+    end
 
-    if C_QuestLog.GetQuestWatchType(questID) then
+    -- Modern API: single parameter
+    local success = false
+    if C_QuestLog.AddQuestWatch then
+        local ok = pcall(function() success = C_QuestLog.AddQuestWatch(questID) end)
+        if not ok then success = false end
+    end
+
+    -- IMPORTANT: do NOT call the old global AddQuestWatch unless it actually exists
+    if not success and AddQuestWatch then
+        pcall(function() AddQuestWatch(questID) end)
+    end
+
+    -- Verify
+    if C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(questID) then
         print("And |cff33ff99QCS|r auto-tracked it")
-    else
-        print("|cffff0000QCS:|r Failed to track quest:", title)
+    elseif QCS_DebugTrack then
+        print("|cffff0000[QCS Debug]|r Could not track quest:", title)
     end
 end
 
@@ -104,7 +142,7 @@ f:SetScript("OnEvent", function(self, event, ...)
                     if allDone and not fullyCompleted[info.questID] then
                         fullyCompleted[info.questID] = true
                         PlaySound(6199, "Master")
-                        print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QCS:|r |cffffff00" ..
+                        print("|cff33ff99QCS:|r |cffffff00" ..
                             (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
                     end
                 end
