@@ -1,4 +1,7 @@
 ✨ Feature Highlights
+v1.2.1
+Fixed handling of all quest types
+
 v1.2 — Auto-Tracking & UI Improvements
 
 🔊 Quest Complete Sound
