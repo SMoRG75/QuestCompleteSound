@@ -139,11 +139,25 @@ f:SetScript("OnEvent", function(self, event, ...)
                             break
                         end
                     end
+
+                    -- If all objectives done and not previously marked complete
                     if allDone and not fullyCompleted[info.questID] then
                         fullyCompleted[info.questID] = true
                         PlaySound(6199, "Master")
-                        print("|cff33ff99QCS:|r |cffffff00" ..
-                            (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
+
+                        -- Determine quest type
+                        local isTask = C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(info.questID)
+                        local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)
+
+                        if isTask or isWorld then
+                            -- Bonus or world quest
+                            print("|cff33ff99QCS:|r |cffffff00" ..
+                                (info.title or info.questID) .. "|r |cff00ff00is done!|r")
+                        else
+                            -- Normal quest
+                            print("|cff33ff99QCS:|r |cffffff00" ..
+                                (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
+                        end
                     end
                 end
             end
@@ -158,16 +172,17 @@ f:SetScript("OnEvent", function(self, event, ...)
         QCS_Init()
         if QCS_ShowSplash then
             local version = QCS_GetVersion()
-            local state  = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+            local state = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
             print("|cff33ff99----------------------------------------|r")
-            print("|cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r loaded.")
+            print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" ..
+                version .. "|r loaded.")
             print("|cff33ff99AutoTrack:|r " .. state)
             print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
             print("|cff33ff99----------------------------------------|r")
         end
     end
-
 end)
+
 
 ------------------------------------------------------------
 -- Event: QUEST_ACCEPTED (for autotrack)
