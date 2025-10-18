@@ -229,14 +229,6 @@ f:HookScript("OnEvent", function(self, event, ...)
     end
 end)
 
-
--- Hook tracker updates (Retail & Classic fallbacks)
-if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.Update then
-    hooksecurefunc(QUEST_TRACKER_MODULE, "Update", QCS_RecolorQuestObjectives)
-elseif ObjectiveTracker_Update then
-    hooksecurefunc("ObjectiveTracker_Update", QCS_RecolorQuestObjectives)
-end
-
 ------------------------------------------------------------
 -- Quest completion sound + message formatting
 ------------------------------------------------------------
