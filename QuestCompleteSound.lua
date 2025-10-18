@@ -40,6 +40,18 @@ local function QCS_GetVersion()
 end
 
 ------------------------------------------------------------
+-- Helper: Get current QCS states (formatted strings)
+------------------------------------------------------------
+local function QCS_GetStateStrings()
+    local version = QCS_GetVersion()
+    local atState = QCS_AutoTrack     and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    local spState = QCS_ShowSplash    and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    local coState = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+
+    return version, atState, spState, coState
+end
+
+------------------------------------------------------------
 -- Auto-track newly accepted quests (robust across clients)
 ------------------------------------------------------------
 local function QCS_HandleTrackableTypes(questID)
@@ -112,7 +124,7 @@ local function QCS_TryAutoTrack(questID, retries)
     end
 
     if C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(questID) then
-        print("|cff33ff99QCS:|r Auto-tracked new quest: |cffffff00" .. title .. "|r")
+        print("And |cff33ff99QCS|r auto-tracked it")
     elseif QCS_DebugTrack then
         print("|cffff0000[QCS Debug]|r Could not track quest:", title or questID)
     end
@@ -220,7 +232,6 @@ local function QCS_OnQuestLogUpdate()
 end
 
 -- Register our color-refresh hook once player is in-game
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:HookScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         QCS_HookTracker()
@@ -257,10 +268,10 @@ local function QCS_CheckQuestProgress()
                     local title = info.title or tostring(info.questID)
 
                     if isTask or isWorld then
-                        print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QCS:|r |cffffff00" ..
+                        print("|cff33ff99QCS:|r |cffffff00" ..
                               title .. "|r |cff00ff00is done!|r")
                     else
-                        print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QCS:|r |cffffff00" ..
+                        print("|cff33ff99QCS:|r |cffffff00" ..
                               title .. "|r |cff00ff00is ready to turn in!|r")
                     end
                 end
@@ -273,11 +284,8 @@ end
 -- Help
 ------------------------------------------------------------
 local function QCS_Help()
-    local version = QCS_GetVersion()
-    local atState = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-    local spState = QCS_ShowSplash and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-    local coState = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-
+    local version, atState, spState, coState = QCS_GetStateStrings()    
+    
     print("|cff33ff99----------------------------------------|r")
     print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
     print("|cff33ff99----------------------------------------|r")
@@ -378,16 +386,16 @@ end
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("QUEST_ACCEPTED")
 f:RegisterEvent("QUEST_LOG_UPDATE")
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         QCS_Init()
         if QCS_ShowSplash then
-            local version = QCS_GetVersion()
-            local state = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+            local version, atState, spState, coState = QCS_GetStateStrings()
             print("|cff33ff99----------------------------------------|r")
             print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r loaded.")
-            print("|cff33ff99AutoTrack:|r " .. state)
+            print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
             print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
             print("|cff33ff99----------------------------------------|r")
         end
@@ -403,3 +411,65 @@ f:SetScript("OnEvent", function(self, event, ...)
         QCS_CheckQuestProgress()
     end
 end)
+
+------------------------------------------------------------
+-- UIErrorsFrame quest progress colorization (Retail safe)
+------------------------------------------------------------
+do
+    local orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
+
+    -- Helper: normalize objective text
+    local function NormalizeLabel(text)
+        if not text or text == "" then return nil end
+        text = text:lower():gsub("^%s+", ""):gsub("%s+$", "")
+        text = text:gsub("[:%.,;!%s]+$", "")
+        return text
+    end
+
+    -- Check if label matches any active quest objective
+    local function IsQuestObjectiveLabel(label)
+        if not label then return false end
+        local wanted = NormalizeLabel(label)
+        if not wanted then return false end
+        local numEntries = C_QuestLog.GetNumQuestLogEntries()
+        for i = 1, numEntries do
+            local info = C_QuestLog.GetInfo(i)
+            if info and not info.isHeader and info.questID then
+                local objectives = C_QuestLog.GetQuestObjectives(info.questID)
+                if objectives then
+                    for _, obj in ipairs(objectives) do
+                        local txt = rawget(obj, "text")
+                        if type(txt) == "string" then
+                            local norm = NormalizeLabel(txt)
+                            if norm and (norm == wanted or norm:find(wanted, 1, true) or wanted:find(norm, 1, true)) then                                
+                                return true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return false
+    end
+
+    UIErrorsFrame_OnEvent = function(frame, event, ...)
+        if event == "UI_INFO_MESSAGE" and QCS_ColorProgress then
+            local message, chatType, holdTime = ...
+            local label, cur, total = tostring(message):match("^(.+):%s*(%d+)%s*/%s*(%d+)$")
+            if label and cur and total then
+                cur, total = tonumber(cur), tonumber(total)
+                if IsQuestObjectiveLabel(label) then
+                    local progress = math.min(1, math.max(0, cur / total))
+                    local color = QCS_GetProgressColor(progress)
+                    if QCS_DebugTrack then
+                        print(string.format("|cff9999ff[QCS Debug]|r Colorized quest progress: %s (%d/%d, %.2f)",
+                            label, cur, total, progress))
+                    end
+                    message = color .. message .. "|r"
+                    return orig_UIErrorsFrame_OnEvent(frame, event, message, chatType, holdTime)
+                end
+            end
+        end
+        return orig_UIErrorsFrame_OnEvent(frame, event, ...)
+    end
+end

@@ -1,23 +1,66 @@
-QuestCompleteSound can automatically track newly accepted quests — if you want it to.
+# 🧭 QuestCompleteSound (QCS)
 
-🔧 Enable or disable
+**QuestCompleteSound** makes your questing more immersive.  
+It plays a sound when a quest is ready to turn in — and can optionally color quest progress messages (like “7/8 Wolves Slain”) in **red → yellow → green** based on how close you are to completion.
 
-You control this feature with a simple chat command:
+Compatible with both **Retail** and **Classic** clients.
 
-/qcs autotrack on   – Enable automatic tracking for new quests
-/qcs autotrack off  – Disable automatic tracking
-/qcs autotrack      – Show current state
+---
 
-When enabled, any quest you accept will automatically appear in your quest tracker on the right side of the screen.
+## 🎵 Features
 
-💾 Saved setting
+- 🔔 **Quest Completion Sound**  
+  Plays a sound when all objectives for a quest are complete.
 
-Your choice is remembered between sessions using the addon’s saved variables — so you only need to set it once.
+- 🧩 **Quest Progress Colors (UIErrorsFrame)**  
+  Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
+  Toggle with `/qcs color on`.
 
-🧠 Notes
+- 📋 **Automatic Quest Tracking**  
+  Automatically tracks newly accepted quests in your quest tracker.
 
-If you already have 25 quests tracked (the Blizzard limit), new ones cannot be tracked automatically.
+- 🪄 **Splash Screen & Help**  
+  Shows version, AutoTrack, and colorization state at login or via `/qcs splash`.
 
-Works on both Retail and Classic clients.
+- 🧪 **Debug & Reset Tools**  
+  - `/qcs debug` – lists all quests and tracking states  
+  - `/qcs debugtrack` – shows detailed tracking debug messages  
+  - `/qcs reset` – resets all settings to default
 
-Can be safely toggled on or off at any time during gameplay.
+---
+
+## ⚙️ Chat Commands
+
+| Command | Description |
+|----------|--------------|
+| `/qcs autotrack on/off` | Enable or disable automatic quest tracking |
+| `/qcs autotrack` | Show current autotrack state |
+| `/qcs color on/off` | Enable or disable progress colorization |
+| `/qcs splash on/off` | Enable or disable splash screen on login |
+| `/qcs debug` | List all quests and watch state |
+| `/qcs debugtrack` | Toggle detailed tracking debug output |
+| `/qcs reset` | Reset all settings to defaults |
+| `/qcs help` | Display command overview |
+| `/qcs splash` | Show current configuration splash |
+
+---
+
+## 💾 Saved Variables
+
+Your settings persist between sessions via these variables:
+
+| Variable | Purpose |
+|-----------|----------|
+| `QCS_AutoTrack` | Automatically track newly accepted quests |
+| `QCS_DebugTrack` | Enable detailed debug logging |
+| `QCS_ShowSplash` | Show splash screen at login |
+| `QCS_ColorProgress` | Color quest progress messages (red → green) |
+
+---
+
+## 🧠 Notes
+
+- The Blizzard tracker limit of **25 quests** still applies — new quests can’t be added automatically beyond that.  
+- You can safely toggle features on/off at any time.  
+- Sound and colorization features work independently — use one or both.  
+- Fully compatible with **Retail** and **Classic**.
