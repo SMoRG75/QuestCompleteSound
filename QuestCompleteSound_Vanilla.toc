@@ -1,4 +1,4 @@
-## Interface: 110205
+## Interface: 11507
 ## Title: QuestCompleteSound
 ## Notes: Plays a sound when all quest objectives are completed. Includes optional auto-tracking, splash and progress colorization. and debug tools.
 ## Author: SMoRG75

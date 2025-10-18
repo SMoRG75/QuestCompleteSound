@@ -1,0 +1,9 @@
+{
+  "runtime.version": "Lua 5.1",
+  "diagnostics.globals": [
+    "CreateFrame", "PlaySound", "C_AddOns", "GetAddOnMetadata",
+    "C_QuestLog", "C_Timer", "QUEST_TRACKER_MODULE",
+    "ObjectiveTrackerBlocksFrame", "ObjectiveTracker_Update",
+    "AddQuestWatch", "SLASH_QCS1", "SlashCmdList"
+  ]
+}

@@ -1,173 +1,33 @@
 ------------------------------------------------------------
--- QuestCompleteSound v1.1.1 by SMoRG75
+-- QuestCompleteSound (QCS)
 -- Plays a sound when a quest's objectives are completed.
--- Optional auto-tracking for newly accepted quests.
+-- Optional: auto-track new quests, splash toggle, progress colorization.
+-- Works across Retail & Classic clients.
 ------------------------------------------------------------
 
--- Create main frame for events
+-- Main event frame
 local f = CreateFrame("Frame")
 
 ------------------------------------------------------------
--- Register events
--- These tell the addon which game events to listen for
-------------------------------------------------------------
-f:RegisterEvent("PLAYER_LOGIN")       -- When the player logs in (initialize + splash)
-f:RegisterEvent("QUEST_ACCEPTED")     -- When a new quest is accepted (for auto-tracking)
-f:RegisterEvent("QUEST_LOG_UPDATE")   -- When quest objectives change (for completion detection)
-
-------------------------------------------------------------
--- QCS Quest Objective Colorization
--- Works on both Retail and Classic clients
-------------------------------------------------------------
-
-------------------------------------------------------------
--- QCS_GetProgressColor (smooth gradient version)
--- Converts quest progress (0-1) into a smooth RGB fade
-------------------------------------------------------------
-local function QCS_GetProgressColor(progress)
-    -- Clamp to valid range
-    if progress >= 1 then
-        return "|cff00ff00"  -- Fully complete = bright green
-    elseif progress <= 0 then
-        return "|cffff0000"  -- Not started = red
-    end
-
-    -- Smooth gradient: red → yellow → green
-    -- 0.0 = red (255, 0, 0)
-    -- 0.5 = yellow (255, 255, 0)
-    -- 1.0 = green (0, 255, 0)
-    local r, g
-
-    if progress < 0.5 then
-        -- Between red (1,0,0) and yellow (1,1,0)
-        r = 1
-        g = progress * 2     -- goes 0→1
-    else
-        -- Between yellow (1,1,0) and green (0,1,0)
-        r = 1 - ((progress - 0.5) * 2) -- goes 1→0
-        g = 1
-    end
-
-    local R = math.floor(r * 255)
-    local G = math.floor(g * 255)
-    local B = 0
-    return string.format("|cff%02x%02x%02x", R, G, B)
-end
-
-
--- Helper: Recolor the tracker line for a specific quest objective
-local function QCS_RecolorQuestObjectives()
-    if not QCS_ColorProgress then return end
-
-    local numEntries = C_QuestLog.GetNumQuestLogEntries()
-    for i = 1, numEntries do
-        local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID then
-            local objectives = C_QuestLog.GetQuestObjectives(info.questID)
-            if objectives then
-                for _, obj in ipairs(objectives) do
-                    if obj.numItems and obj.numItems > 0 then
-                        local progress = obj.numFulfilled / obj.numRequired
-                        local color = (obj.numRequired == 1) and "|cff00ff00" or QCS_GetProgressColor(progress)
-
-                        local text = string.format("%s%d/%d|r %s",
-                            color, obj.numFulfilled, obj.numRequired, obj.text or "")
-
-                        -- Find the tracker block for this quest
-                        local block
-                        if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.GetBlock then
-                            block = QUEST_TRACKER_MODULE:GetBlock(info.questID)
-                        elseif ObjectiveTrackerBlocksFrame and ObjectiveTrackerBlocksFrame.GetBlock then
-                            block = ObjectiveTrackerBlocksFrame:GetBlock(info.questID)
-                        end
-
-                        if block and block.lines then
-                            for _, line in pairs(block.lines) do
-                                if line.text and line.text:GetText() and obj.text and line.text:GetText():find(obj.text) then
-                                    line.text:SetText(text)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-------------------------------------------------------------
--- Hook into Blizzard's objective tracker updates
-------------------------------------------------------------
-if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.Update then
-    hooksecurefunc(QUEST_TRACKER_MODULE, "Update", QCS_RecolorQuestObjectives)
-elseif ObjectiveTracker_Update then
-    hooksecurefunc("ObjectiveTracker_Update", QCS_RecolorQuestObjectives)
-end
-
-
-
-------------------------------------------------------------
--- QCS_CheckQuestProgress
--- Detects when all objectives of a quest are completed
-------------------------------------------------------------
-local fullyCompleted = {}
-
-function QCS_CheckQuestProgress()
-    local numEntries = C_QuestLog.GetNumQuestLogEntries()
-    for i = 1, numEntries do
-        local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID then
-            local objectives = C_QuestLog.GetQuestObjectives(info.questID)
-            if objectives and #objectives > 0 then
-                local allDone = true
-                for _, obj in ipairs(objectives) do
-                    if not obj.finished then
-                        allDone = false
-                        break
-                    end
-                end
-
-                -- When all objectives are done, but not previously marked
-                if allDone and not fullyCompleted[info.questID] then
-                    fullyCompleted[info.questID] = true
-                    PlaySound(6199, "Master")
-
-                    -- Determine quest type
-                    local isTask = C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(info.questID)
-                    local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)
-
-                    if isTask or isWorld then
-                        print("|cff33ff99QCS:|r |cffffff00" ..
-                            (info.title or info.questID) .. "|r |cff00ff00is done!|r")
-                    else
-                        print("|cff33ff99QCS:|r |cffffff00" ..
-                            (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
-                    end
-                end
-            end
-        end
-    end
-end
-
-------------------------------------------------------------
--- QCS_Init & Reset: Ensures all saved variables exist
+-- Saved variables init/reset
 ------------------------------------------------------------
 function QCS_Init(reset)
     if reset then
-        QCS_AutoTrack = false
-        QCS_DebugTrack = false
+        QCS_AutoTrack     = false
+        QCS_DebugTrack    = false
+        QCS_ShowSplash    = true
+        QCS_ColorProgress = true
         print("|cff33ff99QCS:|r All settings have been reset to defaults.")
         return
     end
-
-    if QCS_AutoTrack == nil then QCS_AutoTrack = false end
-    if QCS_DebugTrack == nil then QCS_DebugTrack = false end
-    if QCS_ShowSplash == nil then QCS_ShowSplash = true end
-    if QCS_ColorProgress == nil then QCS_ColorProgress = true end
+    if QCS_AutoTrack     == nil then QCS_AutoTrack     = false end
+    if QCS_DebugTrack    == nil then QCS_DebugTrack    = false end
+    if QCS_ShowSplash    == nil then QCS_ShowSplash    = true  end
+    if QCS_ColorProgress == nil then QCS_ColorProgress = true  end
 end
 
 ------------------------------------------------------------
--- QCS_GetVersion: Supports both Retail & Classic APIs
+-- Version helper (Retail + Classic compatible)
 ------------------------------------------------------------
 local function QCS_GetVersion()
     if C_AddOns and C_AddOns.GetAddOnMetadata then
@@ -179,9 +39,11 @@ local function QCS_GetVersion()
     end
 end
 
--- Helper: detect non-trackable quests (bonus/task) and world quests
+------------------------------------------------------------
+-- Auto-track newly accepted quests (robust across clients)
+------------------------------------------------------------
 local function QCS_HandleTrackableTypes(questID)
-    -- Bonus objectives / task quests: don't try to add a watch (Blizzard handles these automatically)
+    -- Skip bonus/task objectives: Blizzard handles visibility automatically
     if C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(questID) then
         if QCS_DebugTrack then
             print("|cff9999ff[QCS Debug]|r Skipping task/bonus objective:", questID)
@@ -189,7 +51,7 @@ local function QCS_HandleTrackableTypes(questID)
         return "skip"
     end
 
-    -- World quests: use the correct API if available
+    -- World quests: use dedicated API where available
     if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
         if C_QuestLog.AddWorldQuestWatch then
             local ok = pcall(function() C_QuestLog.AddWorldQuestWatch(questID) end)
@@ -206,23 +68,20 @@ local function QCS_HandleTrackableTypes(questID)
         return "skip"
     end
 
-    return "normal" -- regular quest, OK to track
+    return "normal"
 end
 
--- Updated, safe autotrack
 local function QCS_TryAutoTrack(questID, retries)
     if not questID then return end
     retries = retries or 0
 
     if retries > 5 then
-        print("|cffff0000QCS:|r Failed to auto-track quest after multiple attempts:", questID)
+        print("|cffff0000QCS:|r Failed to auto-track quest:", questID)
         return
     end
 
     local mode = QCS_HandleTrackableTypes(questID)
-    if mode == "skip" or mode == "done" then
-        return
-    end
+    if mode ~= "normal" then return end
 
     local title = C_QuestLog.GetTitleForQuestID(questID)
     if not title then
@@ -242,33 +101,190 @@ local function QCS_TryAutoTrack(questID, retries)
         print("|cff9999ff[QCS Debug]|r Attempting to track:", title)
     end
 
-    -- Modern API: single parameter
     local success = false
     if C_QuestLog.AddQuestWatch then
         local ok = pcall(function() success = C_QuestLog.AddQuestWatch(questID) end)
         if not ok then success = false end
     end
-
-    -- IMPORTANT: do NOT call the old global AddQuestWatch unless it actually exists
+    -- Classic fallback only if global exists
     if not success and AddQuestWatch then
         pcall(function() AddQuestWatch(questID) end)
     end
 
-    -- Verify
     if C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(questID) then
-        print("And |cff33ff99QCS|r auto-tracked it")
+        print("|cff33ff99QCS:|r Auto-tracked new quest: |cffffff00" .. title .. "|r")
     elseif QCS_DebugTrack then
-        print("|cffff0000[QCS Debug]|r Could not track quest:", title)
+        print("|cffff0000[QCS Debug]|r Could not track quest:", title or questID)
     end
 end
 
 ------------------------------------------------------------
--- QCS_Help: Displays all available slash commands
+-- Smooth progress color (red -> yellow -> green)
+------------------------------------------------------------
+local function QCS_GetProgressColor(progress)
+    if progress >= 1 then
+        return "|cff00ff00"
+    elseif progress <= 0 then
+        return "|cffff0000"
+    end
+    local r, g
+    if progress < 0.5 then
+        r, g = 1, progress * 2
+    else
+        r, g = 1 - ((progress - 0.5) * 2), 1
+    end
+    local R = math.floor(r * 255)
+    local G = math.floor(g * 255)
+    return string.format("|cff%02x%02x%02x", R, G, 0)
+end
+
+------------------------------------------------------------
+-- Recolor quest tracker objective lines (safe, lint-clean)
+------------------------------------------------------------
+local function QCS_RecolorQuestObjectives()
+    if not QCS_ColorProgress then return end
+
+    local numEntries = C_QuestLog.GetNumQuestLogEntries()
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if info and not info.isHeader and info.questID then
+            local objectives = C_QuestLog.GetQuestObjectives(info.questID)
+            if objectives then
+                for _, obj in ipairs(objectives) do
+                    -- Safe reads (avoid VS Code 'undefined-field' warnings)
+                    local numItems     = rawget(obj, "numItems")
+                    local numRequired  = rawget(obj, "numRequired")
+                    local numFulfilled = rawget(obj, "numFulfilled")
+                    local objText      = rawget(obj, "text")
+
+                    -- Determine if this objective has a numeric counter
+                    local hasCounter = (type(numItems) == "number" and numItems > 0)
+                                    or (type(numRequired) == "number" and numRequired > 0)
+
+                    if hasCounter then
+                        -- Pick a valid counter and progress
+                        local required  = (type(numRequired) == "number" and numRequired)
+                                       or (type(numItems) == "number" and numItems)
+                                       or 0
+                        local fulfilled = (type(numFulfilled) == "number" and numFulfilled) or 0
+
+                        local color
+                        if required == 1 then
+                            color = "|cff00ff00" -- single-step -> green immediately
+                        else
+                            local progress = (required > 0) and (fulfilled / required) or 0
+                            color = QCS_GetProgressColor(progress)
+                        end
+
+                        local text = string.format("%s%d/%d|r %s", color, fulfilled, required, objText or "")
+
+                        -- Locate quest tracker block for this quest
+                        local block = (QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.GetBlock and QUEST_TRACKER_MODULE:GetBlock(info.questID))
+                                   or (ObjectiveTrackerBlocksFrame and ObjectiveTrackerBlocksFrame.GetBlock and ObjectiveTrackerBlocksFrame:GetBlock(info.questID))
+
+                        -- Update matching line text safely
+                        if block and block.lines then
+                            for _, line in pairs(block.lines) do
+                                local lineText = line.text and line.text:GetText()
+                                if lineText and objText and lineText:find(objText, 1, true) then
+                                    line.text:SetText(text)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+------------------------------------------------------------
+-- Hook tracker updates (Retail & Classic safe)
+------------------------------------------------------------
+local function QCS_HookTracker()
+    -- Retail style
+    if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.Update then
+        hooksecurefunc(QUEST_TRACKER_MODULE, "Update", QCS_RecolorQuestObjectives)
+    end
+    -- Classic / fallback
+    if ObjectiveTracker_Update then
+        hooksecurefunc("ObjectiveTracker_Update", QCS_RecolorQuestObjectives)
+    end
+end
+
+------------------------------------------------------------
+-- Update colors also on quest log updates
+------------------------------------------------------------
+local function QCS_OnQuestLogUpdate()
+    QCS_RecolorQuestObjectives()
+end
+
+-- Register our color-refresh hook once player is in-game
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
+f:HookScript("OnEvent", function(self, event, ...)
+    if event == "PLAYER_ENTERING_WORLD" then
+        QCS_HookTracker()
+    elseif event == "QUEST_LOG_UPDATE" then
+        QCS_OnQuestLogUpdate()
+    end
+end)
+
+
+-- Hook tracker updates (Retail & Classic fallbacks)
+if QUEST_TRACKER_MODULE and QUEST_TRACKER_MODULE.Update then
+    hooksecurefunc(QUEST_TRACKER_MODULE, "Update", QCS_RecolorQuestObjectives)
+elseif ObjectiveTracker_Update then
+    hooksecurefunc("ObjectiveTracker_Update", QCS_RecolorQuestObjectives)
+end
+
+------------------------------------------------------------
+-- Quest completion sound + message formatting
+------------------------------------------------------------
+local fullyCompleted = {}
+
+local function QCS_CheckQuestProgress()
+    local numEntries = C_QuestLog.GetNumQuestLogEntries()
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if info and not info.isHeader and info.questID then
+            local objectives = C_QuestLog.GetQuestObjectives(info.questID)
+            if objectives and #objectives > 0 then
+                local allDone = true
+                for _, obj in ipairs(objectives) do
+                    if not obj.finished then
+                        allDone = false
+                        break
+                    end
+                end
+                if allDone and not fullyCompleted[info.questID] then
+                    fullyCompleted[info.questID] = true
+                    PlaySound(6199, "Master")
+
+                    local isTask = C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(info.questID)
+                    local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)
+                    local title = info.title or tostring(info.questID)
+
+                    if isTask or isWorld then
+                        print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QCS:|r |cffffff00" ..
+                              title .. "|r |cff00ff00is done!|r")
+                    else
+                        print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QCS:|r |cffffff00" ..
+                              title .. "|r |cff00ff00is ready to turn in!|r")
+                    end
+                end
+            end
+        end
+    end
+end
+
+------------------------------------------------------------
+-- Help
 ------------------------------------------------------------
 local function QCS_Help()
     local version = QCS_GetVersion()
-    local stateAutoTrack = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-    local stateShowSplash = QCS_ShowSplash and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    local atState = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    local spState = QCS_ShowSplash and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    local coState = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
 
     print("|cff33ff99----------------------------------------|r")
     print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
@@ -276,24 +292,28 @@ local function QCS_Help()
     print("|cff00ff00/qcs autotrack on|r   |cffcccccc- Enable automatic quest tracking|r")
     print("|cff00ff00/qcs autotrack off|r  |cffcccccc- Disable automatic quest tracking|r")
     print("|cff00ff00/qcs autotrack|r      |cffcccccc- Show current autotrack state|r")
-    print("|cff00ff00/qcs debug|r          |cffcccccc- List all quests and tracking state|r")
-    print("|cff00ff00/qcs debugtrack|r     |cffcccccc- Toggle verbose tracking debug|r")
-    print("|cff00ff00/qcs reset|r          |cffcccccc- Reset all settings to defaults|r")
-    print("|cff00ff00/qcs help|r           |cffcccccc- Show this help message|r")
-    print("|cff00ff00/qcs splash on|r      |cffcccccc- Enable splash screen on login|r")
-    print("|cff00ff00/qcs splash off|r     |cffcccccc- Disable splash screen on login|r")
-    print("|cff00ff00/qcs splash|r         |cffcccccc- Show current splash state|r")
     print("|cff00ff00/qcs color on|r       |cffcccccc- Enable progress colorization|r")
     print("|cff00ff00/qcs color off|r      |cffcccccc- Disable progress colorization|r")
     print("|cff00ff00/qcs color|r          |cffcccccc- Show current colorization state|r")
+    print("|cff00ff00/qcs splash on|r      |cffcccccc- Show splash on login|r")
+    print("|cff00ff00/qcs splash off|r     |cffcccccc- Hide splash on login|r")
+    print("|cff00ff00/qcs splash|r         |cffcccccc- Show current splash state|r")
+    print("|cff00ff00/qcs debug|r          |cffcccccc- List quests + watch state|r")
+    print("|cff00ff00/qcs debugtrack|r     |cffcccccc- Toggle verbose tracking debug|r")
+    print("|cff00ff00/qcs reset|r          |cffcccccc- Reset all settings to defaults|r")
     print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99AutoTrack status:|r " .. stateAutoTrack)
-    print("|cff33ff99ShowSplash status:|r " .. stateShowSplash)
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
+    if QCS_ColorProgress then
+        local preview = string.format("%s4/8 Wolves Slain|r", QCS_GetProgressColor(0.5))
+        print("|cff9999ff[QCS Preview]|r Example progression: " .. preview)
+    else
+        print("|cff9999ff[QCS Preview]|r Progress colorization is currently disabled.")
+    end
     print("|cff33ff99----------------------------------------|r")
 end
 
 ------------------------------------------------------------
--- Slash Command Handler
+-- Slash command
 ------------------------------------------------------------
 SLASH_QCS1 = "/qcs"
 SlashCmdList["QCS"] = function(msg)
@@ -305,8 +325,37 @@ SlashCmdList["QCS"] = function(msg)
         QCS_AutoTrack = false
         print("|cff33ff99QCS:|r Auto-tracking is now |cffff0000OFF|r.")
     elseif msg == "autotrack" then
-        local state = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-        print("|cff33ff99QCS:|r Auto-tracking is currently " .. state)
+        local s = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+        print("|cff33ff99QCS:|r Auto-tracking is currently " .. s)
+
+    elseif msg == "color on" then
+        QCS_ColorProgress = true
+        print("|cff33ff99QCS:|r Progress colorization is now |cff00ff00ON|r.")
+        print("|cff9999ff[QCS Preview]|r Example progression colors:")
+        print(QCS_GetProgressColor(0.0) .. "0/8 Wolves Slain|r")
+        print(QCS_GetProgressColor(0.5) .. "4/8 Wolves Slain|r")
+        print(QCS_GetProgressColor(1.0) .. "8/8 Wolves Slain|r")
+        print("|cff00ff00" .. "0/1 Artifact Found|r")
+    elseif msg == "color off" then
+        QCS_ColorProgress = false
+        print("|cff33ff99QCS:|r Progress colorization is now |cffff0000OFF|r.")
+    elseif msg == "color" then
+        local s = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+        print("|cff33ff99QCS:|r Progress colorization is currently " .. s)
+        if QCS_ColorProgress then
+            print("|cff9999ff[QCS Preview]|r Example: " .. QCS_GetProgressColor(0.5) .. "4/8 Wolves Slain|r")
+        end
+
+    elseif msg == "splash on" then
+        QCS_ShowSplash = true
+        print("|cff33ff99QCS:|r Splash screen is now |cff00ff00ON|r.")
+    elseif msg == "splash off" then
+        QCS_ShowSplash = false
+        print("|cff33ff99QCS:|r Splash screen is now |cffff0000OFF|r.")
+    elseif msg == "splash" then
+        local s = QCS_ShowSplash and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+        print("|cff33ff99QCS:|r Splash screen is currently " .. s)
+
     elseif msg == "debug" then
         print("|cff33ff99QCS Debug:|r Listing all quests...")
         local numEntries = C_QuestLog.GetNumQuestLogEntries()
@@ -320,57 +369,24 @@ SlashCmdList["QCS"] = function(msg)
         end
     elseif msg == "debugtrack" then
         QCS_DebugTrack = not QCS_DebugTrack
-        local state = QCS_DebugTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-        print("|cff33ff99QCS:|r Debug tracking is now " .. state)
+        local s = QCS_DebugTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+        print("|cff33ff99QCS:|r Debug tracking is now " .. s)
+
     elseif msg == "reset" then
         QCS_Init(true)
         print("|cff33ff99QCS:|r Settings restored. You may need to /reload.")
-    elseif msg == "splash on" then
-        QCS_ShowSplash = true
-        print("|cff33ff99QCS:|r Splash screen is now |cff00ff00ON|r.")
-    elseif msg == "splash off" then
-        QCS_ShowSplash = false
-        print("|cff33ff99QCS:|r Splash screen is now |cffff0000OFF|r.")
-    ------------------------------------------------------------
-    -- Color progress toggle
-    ------------------------------------------------------------
-    elseif msg == "color on" then
-        QCS_ColorProgress = true
-        print("|cff33ff99QCS:|r Progress colorization is now |cff00ff00ON|r.")
-
-        -- Show a preview
-        local examples = {
-            { text = "0/8 Wolves Slain", color = QCS_GetProgressColor(0.0) },
-            { text = "4/8 Wolves Slain", color = QCS_GetProgressColor(0.5) },
-            { text = "8/8 Wolves Slain", color = QCS_GetProgressColor(1.0) },
-            { text = "0/1 Artifact Found", color = "|cff00ff00" }
-        }
-
-        print("|cff9999ff[QCS Preview]|r Example progression colors:")
-        for _, ex in ipairs(examples) do
-            print(ex.color .. ex.text .. "|r")
-        end
-    elseif msg == "color off" then
-        QCS_ColorProgress = false
-        print("|cff33ff99QCS:|r Progress colorization is now |cffff0000OFF|r.")
-    elseif msg == "color" then
-        local state = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-        print("|cff33ff99QCS:|r Progress colorization is currently " .. state)
-
-        -- Show mini preview only if it's ON
-        if QCS_ColorProgress then
-            local preview = string.format("%s4/8 Wolves Slain|r", QCS_GetProgressColor(0.5))
-            print("|cff9999ff[QCS Preview]|r Example: " .. preview)
-        end
     else
         QCS_Help()
     end
 end
 
 ------------------------------------------------------------
--- Set event handler
--- All events funnel into this single handler
+-- Event registration & handler
 ------------------------------------------------------------
+f:RegisterEvent("PLAYER_LOGIN")
+f:RegisterEvent("QUEST_ACCEPTED")
+f:RegisterEvent("QUEST_LOG_UPDATE")
+
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         QCS_Init()
@@ -378,8 +394,7 @@ f:SetScript("OnEvent", function(self, event, ...)
             local version = QCS_GetVersion()
             local state = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
             print("|cff33ff99----------------------------------------|r")
-            print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" ..
-                version .. "|r loaded.")
+            print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r loaded.")
             print("|cff33ff99AutoTrack:|r " .. state)
             print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
             print("|cff33ff99----------------------------------------|r")
@@ -387,13 +402,12 @@ f:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "QUEST_ACCEPTED" then
         local arg1, arg2 = ...
-        local questID = arg2 or arg1
+        local questID = arg2 or arg1  -- Retail: (index, questID) / Classic: (questID)
         if QCS_AutoTrack and questID then
             QCS_TryAutoTrack(questID)
         end
 
     elseif event == "QUEST_LOG_UPDATE" then
-        -- (din eksisterende logik til at afspille lyd og skrive besked)
         QCS_CheckQuestProgress()
     end
 end)
