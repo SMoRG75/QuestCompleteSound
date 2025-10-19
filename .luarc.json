@@ -5,6 +5,7 @@
     "C_QuestLog", "C_Timer", "QUEST_TRACKER_MODULE",
     "ObjectiveTrackerBlocksFrame", "ObjectiveTracker_Update",
     "AddQuestWatch", "SLASH_QCS1", "SlashCmdList", "UIErrorsFrame",
-    "UIErrorsFrame_OnEvent"
+    "UIErrorsFrame_OnEvent", "QuestWatch_Update", "WatchFrame_Update",
+    "GetQuestLogTitle"
   ]
 }

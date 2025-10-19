@@ -6,6 +6,7 @@
 ## IconTexture: Interface\AddOns\QuestCompleteSound\qcs
 ## SavedVariables: QCS_AutoTrack, QCS_DebugTrack, QCS_ShowSplash, QCS_ColorProgress
 ## X-Curse-Project-ID: 1354943
+## X-Interface: 110205
 ## X-Category: Quests & Leveling
 ## X-License: MIT
 ## X-Website: https://github.com/SMoRG75/QuestCompleteSound

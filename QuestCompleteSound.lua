@@ -16,14 +16,14 @@ function QCS_Init(reset)
         QCS_AutoTrack     = false
         QCS_DebugTrack    = false
         QCS_ShowSplash    = true
-        QCS_ColorProgress = true
+        QCS_ColorProgress = false
         print("|cff33ff99QCS:|r All settings have been reset to defaults.")
         return
     end
     if QCS_AutoTrack     == nil then QCS_AutoTrack     = false end
     if QCS_DebugTrack    == nil then QCS_DebugTrack    = false end
     if QCS_ShowSplash    == nil then QCS_ShowSplash    = true  end
-    if QCS_ColorProgress == nil then QCS_ColorProgress = true  end
+    if QCS_ColorProgress == nil then QCS_ColorProgress = false  end
 end
 
 ------------------------------------------------------------
@@ -389,7 +389,7 @@ SlashCmdList["QCS"] = function(msg)
         print(QCS_GetProgressColor(0.0) .. "0/8 Wolves Slain|r")
         print(QCS_GetProgressColor(0.5) .. "4/8 Wolves Slain|r")
         print(QCS_GetProgressColor(1.0) .. "8/8 Wolves Slain|r")
-        print("|cff00ff00" .. "0/1 Artifact Found|r")
+        print("|cff00ff00" .. "1/1 Artifact Found|r")
     elseif msg == "color off" then
         UIErrorsFrame:RegisterEvent("UI_INFO_MESSAGE")
         QCS_ColorProgress = false
@@ -429,7 +429,7 @@ SlashCmdList["QCS"] = function(msg)
 
     elseif msg == "reset" then
         QCS_Init(true)
-        print("|cff33ff99QCS:|r Settings restored. You may need to /reload.")
+        print("|cff33ff99QCS:|r Settings restored.")
     else
         QCS_Help()
     end
@@ -448,18 +448,72 @@ f:SetScript("OnEvent", function(self, event, ...)
         if QCS_ShowSplash then
             local version, atState, spState, coState = QCS_GetStateStrings()
             print("|cff33ff99----------------------------------------|r")
-            print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r loaded.")
+            print("|cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r loaded.")
             print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
             print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
             print("|cff33ff99----------------------------------------|r")
         end
 
-    elseif event == "QUEST_ACCEPTED" then
-        local arg1, arg2 = ...
-        local questID = arg2 or arg1  -- Retail: (index, questID) / Classic: (questID)
-        if QCS_AutoTrack and questID then
+elseif event == "QUEST_ACCEPTED" then
+    local arg1, arg2 = ...
+    local questIndex, questID = arg1, arg2
+
+    if QCS_AutoTrack then
+        -- Detect Classic environment: no C_TaskQuest or missing C_QuestLog.GetTitleForQuestID
+        local isClassic = (not C_TaskQuest) or (not C_QuestLog or not C_QuestLog.GetTitleForQuestID)
+
+        if not isClassic and questID and C_QuestLog then
+            ------------------------------------------------------------
+            -- Modern / Retail clients
+            ------------------------------------------------------------
             QCS_TryAutoTrack(questID)
+
+        elseif questIndex and AddQuestWatch then
+            ------------------------------------------------------------
+            -- Classic / SoD / Hardcore clients
+            ------------------------------------------------------------
+            local function doTrack()
+                local title, _, _, isHeader = GetQuestLogTitle(questIndex)
+                if not isHeader then
+                    AddQuestWatch(questIndex)
+
+                    -- Force the watch frame / tracker to refresh
+                    if QuestWatch_Update then
+                        QuestWatch_Update()
+                    elseif WatchFrame_Update then
+                        WatchFrame_Update()
+                    elseif ObjectiveTracker_Update then
+                        ObjectiveTracker_Update()
+                    end
+
+                    if QCS_DebugTrack then
+                        print(string.format("|cff9999ff[QCS Debug]|r Classic auto-tracked and refreshed: %s (index %d)", title or "Unknown quest", questIndex))
+                    else
+                        print("And |cff33ff99QCS|r auto-tracked it")
+                    end
+                elseif QCS_DebugTrack then
+                    print(string.format("|cff9999ff[QCS Debug]|r Skipped header entry at index %d", questIndex))
+                end
+            end
+
+            -- Delay a bit so quest appears in log first
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.3, doTrack)
+            else
+                local delayFrame = CreateFrame("Frame")
+                local t0 = GetTime()
+                delayFrame:SetScript("OnUpdate", function(self)
+                    if GetTime() - t0 > 0.3 then
+                        doTrack()
+                        self:SetScript("OnUpdate", nil)
+                    end
+                end)
+            end
+        elseif QCS_DebugTrack then
+            print("|cff9999ff[QCS Debug]|r Could not auto-track quest; no valid API for this client.")
         end
+    end
+
 
     elseif event == "QUEST_LOG_UPDATE" then
         QCS_CheckQuestProgress()
@@ -584,5 +638,7 @@ end
 local QCS_InfoInit = CreateFrame("Frame")
 QCS_InfoInit:RegisterEvent("PLAYER_LOGIN")
 QCS_InfoInit:SetScript("OnEvent", function()
-    QCS_EnableCustomInfoMessages()
+    if QCS_ColorProgress then
+        QCS_EnableCustomInfoMessages()
+    end
 end)
