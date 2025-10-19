@@ -232,6 +232,7 @@ local function QCS_OnQuestLogUpdate()
 end
 
 -- Register our color-refresh hook once player is in-game
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:HookScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         QCS_HookTracker()
@@ -386,7 +387,6 @@ end
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("QUEST_ACCEPTED")
 f:RegisterEvent("QUEST_LOG_UPDATE")
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
@@ -413,63 +413,46 @@ f:SetScript("OnEvent", function(self, event, ...)
 end)
 
 ------------------------------------------------------------
--- UIErrorsFrame quest progress colorization (Retail safe)
+-- QCS Custom display for UI_INFO_MESSAGE (Retail-safe)
+-- Suppresses Blizzard UIErrorsFrame output
 ------------------------------------------------------------
-do
-    local orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
 
-    -- Helper: normalize objective text
-    local function NormalizeLabel(text)
-        if not text or text == "" then return nil end
-        text = text:lower():gsub("^%s+", ""):gsub("%s+$", "")
-        text = text:gsub("[:%.,;!%s]+$", "")
-        return text
-    end
-
-    -- Check if label matches any active quest objective
-    local function IsQuestObjectiveLabel(label)
-        if not label then return false end
-        local wanted = NormalizeLabel(label)
-        if not wanted then return false end
-        local numEntries = C_QuestLog.GetNumQuestLogEntries()
-        for i = 1, numEntries do
-            local info = C_QuestLog.GetInfo(i)
-            if info and not info.isHeader and info.questID then
-                local objectives = C_QuestLog.GetQuestObjectives(info.questID)
-                if objectives then
-                    for _, obj in ipairs(objectives) do
-                        local txt = rawget(obj, "text")
-                        if type(txt) == "string" then
-                            local norm = NormalizeLabel(txt)
-                            if norm and (norm == wanted or norm:find(wanted, 1, true) or wanted:find(norm, 1, true)) then                                
-                                return true
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        return false
-    end
-
-    UIErrorsFrame_OnEvent = function(frame, event, ...)
-        if event == "UI_INFO_MESSAGE" and QCS_ColorProgress then
-            local message, chatType, holdTime = ...
-            local label, cur, total = tostring(message):match("^(.+):%s*(%d+)%s*/%s*(%d+)$")
-            if label and cur and total then
-                cur, total = tonumber(cur), tonumber(total)
-                if IsQuestObjectiveLabel(label) then
-                    local progress = math.min(1, math.max(0, cur / total))
-                    local color = QCS_GetProgressColor(progress)
-                    if QCS_DebugTrack then
-                        print(string.format("|cff9999ff[QCS Debug]|r Colorized quest progress: %s (%d/%d, %.2f)",
-                            label, cur, total, progress))
-                    end
-                    message = color .. message .. "|r"
-                    return orig_UIErrorsFrame_OnEvent(frame, event, message, chatType, holdTime)
-                end
-            end
-        end
-        return orig_UIErrorsFrame_OnEvent(frame, event, ...)
-    end
+-- Disable Blizzard's yellow quest progress messages
+if UIErrorsFrame and UIErrorsFrame:UnregisterEvent("UI_INFO_MESSAGE") then
+    print("|cff33ff99QCS:|r Disabled Blizzard UI_INFO_MESSAGE display.")
 end
+
+-- Create our own message frame for colorized display
+if not QCS_MessageFrame then
+    QCS_MessageFrame = CreateFrame("MessageFrame", nil, UIParent)
+    QCS_MessageFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+    QCS_MessageFrame:SetSize(512, 60)
+    QCS_MessageFrame:SetInsertMode("TOP")
+    QCS_MessageFrame:SetFading(true)
+    QCS_MessageFrame:SetFadeDuration(1.5)
+    QCS_MessageFrame:SetTimeVisible(2.5)
+    QCS_MessageFrame:SetFontObject(GameFontNormalHuge)
+end
+
+local qcsInfoFrame = CreateFrame("Frame")
+qcsInfoFrame:RegisterEvent("UI_INFO_MESSAGE")
+
+qcsInfoFrame:SetScript("OnEvent", function(_, event, messageType, message)
+    if not (event == "UI_INFO_MESSAGE" and QCS_ColorProgress) then return end
+    if type(message) ~= "string" then return end
+
+    local label, cur, total = message:match("^(.+):%s*(%d+)%s*/%s*(%d+)$")
+    if label and cur and total then
+        cur, total = tonumber(cur), tonumber(total)
+        local progress = math.min(1, math.max(0, cur / total))
+        local color = QCS_GetProgressColor(progress)
+
+        -- Display custom colored message
+        QCS_MessageFrame:AddMessage(color .. message .. "|r")
+
+        if QCS_DebugTrack then
+            print(string.format("|cff9999ff[QCS Debug]|r Custom display: %s (%d/%d, %.2f)",
+                label, cur, total, progress))
+        end
+    end
+end)

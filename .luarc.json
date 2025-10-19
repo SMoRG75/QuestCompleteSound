@@ -4,6 +4,7 @@
     "CreateFrame", "PlaySound", "C_AddOns", "GetAddOnMetadata",
     "C_QuestLog", "C_Timer", "QUEST_TRACKER_MODULE",
     "ObjectiveTrackerBlocksFrame", "ObjectiveTracker_Update",
-    "AddQuestWatch", "SLASH_QCS1", "SlashCmdList"
+    "AddQuestWatch", "SLASH_QCS1", "SlashCmdList", "UIErrorsFrame",
+    "UIErrorsFrame_OnEvent"
   ]
 }
