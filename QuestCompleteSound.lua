@@ -314,6 +314,58 @@ local function QCS_Help()
 end
 
 ------------------------------------------------------------
+-- QCS: Retail-safe custom display for UI_INFO_MESSAGE
+-- Suppress Blizzard UIErrorsFrame and show colorized progress
+------------------------------------------------------------
+local function QCS_EnableCustomInfoMessages()
+    -- Disable Blizzard's default UI_INFO_MESSAGE on UIErrorsFrame (so it won't show yellow lines)
+    if UIErrorsFrame and UIErrorsFrame.UnregisterEvent then
+        UIErrorsFrame:UnregisterEvent("UI_INFO_MESSAGE")
+        if QCS_DebugTrack then
+            print("|cff33ff99QCS:|r Disabled Blizzard UI_INFO_MESSAGE display.")
+        end
+    end
+
+    -- Create (or reuse) our own message frame
+    if not QCS_MessageFrame then
+        QCS_MessageFrame = CreateFrame("MessageFrame", "QCS_MessageFrame", UIParent)
+        QCS_MessageFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+        QCS_MessageFrame:SetSize(512, 60)
+        QCS_MessageFrame:SetInsertMode("TOP")
+        QCS_MessageFrame:SetFading(true)
+        QCS_MessageFrame:SetFadeDuration(1.5)
+        QCS_MessageFrame:SetTimeVisible(2.5)
+        QCS_MessageFrame:SetFontObject(GameFontNormalHuge)
+    end
+
+    -- Event frame to listen for UI_INFO_MESSAGE and show our colored text
+    if not QCS_InfoEventFrame then
+        QCS_InfoEventFrame = CreateFrame("Frame", "QCS_InfoEventFrame")
+        QCS_InfoEventFrame:RegisterEvent("UI_INFO_MESSAGE")
+        QCS_InfoEventFrame:SetScript("OnEvent", function(_, event, messageType, message)
+            if event ~= "UI_INFO_MESSAGE" or not QCS_ColorProgress then return end
+            if type(message) ~= "string" then return end
+
+            -- Match messages like: "Boars slain: 4/8"
+            local label, cur, total = message:match("^(.+):%s*(%d+)%s*/%s*(%d+)$")
+            if not (label and cur and total) then return end
+
+            cur, total = tonumber(cur), tonumber(total)
+            local progress = (total and total > 0) and math.min(1, math.max(0, cur / total)) or 0
+            local colorCode = QCS_GetProgressColor(progress)
+
+            -- Show colored message on our own frame
+            QCS_MessageFrame:AddMessage(colorCode .. message .. "|r")
+
+            if QCS_DebugTrack then
+                print(string.format("|cff9999ff[QCS Debug]|r Custom UI_INFO_MESSAGE: %s (%d/%d, %.2f)",
+                    label, cur or -1, total or -1, progress))
+            end
+        end)
+    end
+end
+
+------------------------------------------------------------
 -- Slash command
 ------------------------------------------------------------
 SLASH_QCS1 = "/qcs"
@@ -331,6 +383,7 @@ SlashCmdList["QCS"] = function(msg)
 
     elseif msg == "color on" then
         QCS_ColorProgress = true
+        QCS_EnableCustomInfoMessages()
         print("|cff33ff99QCS:|r Progress colorization is now |cff00ff00ON|r.")
         print("|cff9999ff[QCS Preview]|r Example progression colors:")
         print(QCS_GetProgressColor(0.0) .. "0/8 Wolves Slain|r")
@@ -338,6 +391,7 @@ SlashCmdList["QCS"] = function(msg)
         print(QCS_GetProgressColor(1.0) .. "8/8 Wolves Slain|r")
         print("|cff00ff00" .. "0/1 Artifact Found|r")
     elseif msg == "color off" then
+        UIErrorsFrame:RegisterEvent("UI_INFO_MESSAGE")
         QCS_ColorProgress = false
         print("|cff33ff99QCS:|r Progress colorization is now |cffff0000OFF|r.")
     elseif msg == "color" then
