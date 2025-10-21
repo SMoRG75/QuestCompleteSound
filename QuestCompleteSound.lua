@@ -161,7 +161,6 @@ local function QCS_EnableCustomInfoMessages()
     end
 end
 
-
 -- Helper: detect non-trackable quests (bonus/task) and world quests
 local function QCS_HandleTrackableTypes(questID)
     -- Bonus objectives / task quests: don't try to add a watch (Blizzard handles these automatically)
@@ -312,7 +311,19 @@ end)
 local function QCS_Splash()
     local version, atState, spState, coState = QCS_GetStateStrings()
     print("|cff33ff99----------------------------------------|r")
-    print("|TInterface\\GossipFrame\\ActiveQuestIcon:14|t |cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
+    print("|cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
+    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
+    print("|cff33ff99----------------------------------------|r")
+end
+
+------------------------------------------------------------
+-- Help
+------------------------------------------------------------
+local function QCS_Help()
+    local version, atState, spState, coState = QCS_GetStateStrings()
+    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
     print("|cff33ff99----------------------------------------|r")
     print("|cff00ff00/qcs autotrack on|r   |cffcccccc- Enable automatic quest tracking|r")
     print("|cff00ff00/qcs autotrack off|r  |cffcccccc- Disable automatic quest tracking|r")
@@ -324,15 +335,8 @@ local function QCS_Splash()
     print("|cff00ff00/qcs reset|r          |cffcccccc- Reset all settings to defaults|r")
     print("|cff33ff99----------------------------------------|r")
     print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
-    if QCS_ColorProgress then
-        local preview = string.format("%s4/8 Wolves Slain|r", QCS_GetProgressColor(0.5))
-        print("|cff9999ff[QCS Preview]|r Example progression: " .. preview)
-    else
-        print("|cff9999ff[QCS Preview]|r Progress colorization is currently disabled.")
-    end
     print("|cff33ff99----------------------------------------|r")
 end
-
 
 ------------------------------------------------------------
 -- Slash commands
@@ -340,35 +344,23 @@ end
 SLASH_QCS1 = "/qcs"
 SlashCmdList["QCS"] = function(msg)
     msg = string.lower(msg or "")
-    if msg == "autotrack on" then
-        QCS_AutoTrack = true
-        print("|cff33ff99QCS:|r Auto-track |cff00ff00ON|r.")
-    elseif msg == "autotrack off" then
-        QCS_AutoTrack = false
-        print("|cff33ff99QCS:|r Auto-track |cffff0000OFF|r.")
-    elseif msg == "autotrack" then
+    if msg == "autotrack" then
+        QCS_AutoTrack = not QCS_AutoTrack        
         local s = QCS_AutoTrack and "|cff00ff00ON|r" or "|cffff0000OFF|r"
         print("|cff33ff99QCS:|r Auto-track is " .. s)
-    elseif msg == "color on" then
-        QCS_ColorProgress = true
-        QCS_EnableCustomInfoMessages()
-        print("|cff33ff99QCS:|r Progress colorization |cff00ff00ON|r.")
-    elseif msg == "color off" then
-        if UIErrorsFrame and UIErrorsFrame.RegisterEvent then
-            UIErrorsFrame:RegisterEvent("UI_INFO_MESSAGE")
-        end
-        QCS_ColorProgress = false
-        print("|cff33ff99QCS:|r Progress colorization |cffff0000OFF|r.")
     elseif msg == "color" then
+        QCS_ColorProgress = not QCS_ColorProgress
+        if QCS_ColorProgress then
+            QCS_EnableCustomInfoMessages()
+        else
+            if UIErrorsFrame and UIErrorsFrame.RegisterEvent then
+                UIErrorsFrame:RegisterEvent("UI_INFO_MESSAGE")
+            end
+        end
         local s = QCS_ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
         print("|cff33ff99QCS:|r Progress colorization is " .. s)
-    elseif msg == "splash on" then
-        QCS_ShowSplash = true
-        print("|cff33ff99QCS:|r Splash |cff00ff00ON|r.")
-    elseif msg == "splash off" then
-        QCS_ShowSplash = false
-        print("|cff33ff99QCS:|r Splash |cffff0000OFF|r.")
     elseif msg == "splash" then
+        QCS_ShowSplash = not QCS_ShowSplash
         local s = QCS_ShowSplash and "|cff00ff00ON|r" or "|cffff0000OFF|r"
         print("|cff33ff99QCS:|r Splash is " .. s)
     elseif msg == "debugtrack" then
@@ -377,6 +369,8 @@ SlashCmdList["QCS"] = function(msg)
         print("|cff33ff99QCS:|r Debug tracking " .. s)
     elseif msg == "reset" then
         QCS_Init(true)
+    elseif msg == "help" then
+        QCS_Help()
     else
         local version, at, sp, co = QCS_GetStateStrings()
         print("|cff33ff99QCS|r v" .. version .. " — Auto:" .. at .. " Splash:" .. sp .. " Color:" .. co)
