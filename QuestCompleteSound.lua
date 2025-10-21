@@ -46,7 +46,8 @@ end
 -- QCS_Init & Reset: ensure saved variables exist
 ------------------------------------------------------------
 function QCS.Init(reset)
-    if reset then
+    -- Ensure SavedVariables table exists
+    if reset or type(QCS_DB) ~= "table" then
         QCS_DB = {}
     end
 
@@ -325,41 +326,6 @@ local function QCS_CheckQuestProgress()
 end
 
 ------------------------------------------------------------
--- Stats / debug helpers
-------------------------------------------------------------
-local function QCS_CountTrackedQuests()
-    local count = 0
-    local numEntries = C_QuestLog.GetNumQuestLogEntries() or 0
-    for i = 1, numEntries do
-        local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID then
-            if C_QuestLog.GetQuestWatchType(info.questID) then
-                count = count + 1
-            end
-        end
-    end
-    return count
-end
-
-local function QCS_PrintStats()
-    local tracked = QCS_CountTrackedQuests()
-    local numEntries = C_QuestLog.GetNumQuestLogEntries()
-    local version, atState, spState, coState = QCS_GetStateStrings()
-
-    print("|cff33ff99QCS Stats|r v" .. version)
-    print(string.format("|cffccccccQuests in log:|r %d  |cffccccccTracked:|r %d", numEntries, tracked))
-
-    local last = QCS._lastRecolorAt or 0
-    if last > 0 then
-        print(string.format("|cffccccccLast recolor at:|r %.3f", last))
-    else
-        print("|cffccccccLast recolor at:|r n/a")
-    end
-
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
-end
-
-------------------------------------------------------------
 -- Help
 ------------------------------------------------------------
 local function QCS_Help()
@@ -374,7 +340,6 @@ local function QCS_Help()
     print("|cff00ff00/qcs splash|r      |cffcccccc- Toggle splash on login|r")
     print("|cff00ff00/qcs debugtrack|r  |cffcccccc- Toggle verbose tracking debug|r")
     print("|cff00ff00/qcs dbg|r         |cffcccccc- Shorthand for debugtrack|r")
-    print("|cff00ff00/qcs stats|r       |cffcccccc- Show tracked count and last recolor time|r")
     print("|cff00ff00/qcs reset|r       |cffcccccc- Reset all settings to defaults|r")
     print("|cff33ff99----------------------------------------|r")
     print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
@@ -412,9 +377,6 @@ SlashCmdList["QCS"] = function(msg)
 
     elseif msg == "debugtrack" or msg == "dbg" then
         toggle("DebugTrack", "Debug tracking")
-
-    elseif msg == "stats" then
-        QCS_PrintStats()
 
     elseif msg == "reset" then
         QCS.Init(true)
