@@ -2,9 +2,9 @@
 ## Title: QuestCompleteSound
 ## Notes: Plays a sound when all quest objectives are completed. Includes optional auto-tracking, splash screen and colors UI quest progress (red → yellow → green)
 ## Author: SMoRG75
-## Version: 1.3.0
+## Version: 1.3.1
 ## IconTexture: Interface\AddOns\QuestCompleteSound\qcs
-## SavedVariables: QCS_AutoTrack, QCS_DebugTrack, QCS_ShowSplash, QCS_ColorProgress
+## SavedVariables: QCS_DB
 ## X-Curse-Project-ID: 1354943
 ## X-Interface: 110205
 ## X-Category: Quests & Leveling
