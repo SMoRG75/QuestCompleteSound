@@ -244,6 +244,20 @@ local function QCS_TryAutoTrack(questID, retries)
     end
 end
 
+
+------------------------------------------------------------
+-- Splash
+------------------------------------------------------------
+local function QCS_Splash()
+    local version, atState, spState, coState = QCS_GetStateStrings()
+    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99QuestCompleteSound (QCS)|r |cff33ff99v" .. version .. "|r")
+    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
+    print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
+    print("|cff33ff99----------------------------------------|r")
+end
+
 ------------------------------------------------------------
 -- Event: QUEST_LOG_UPDATE (play sound when quest ready)
 ------------------------------------------------------------
@@ -297,25 +311,10 @@ f:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_LOGIN" then
         QCS_Init()
         if QCS_ShowSplash then
-            local version, at, sp, co = QCS_GetStateStrings()
-            print("|cff33ff99QCS|r v" .. version .. " — Auto:" .. at .. " Splash:" .. sp .. " Color:" .. co)
-            print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
-            print("|cff33ff99----------------------------------------|r")
+            QCS_Splash()
         end
     end
 end)
-
-------------------------------------------------------------
--- Splash
-------------------------------------------------------------
-local function QCS_Splash()
-    local version, atState, spState, coState = QCS_GetStateStrings()
-    print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99QuestCompleteSound (QCS)|r |cff00ff00v" .. version .. "|r")
-    print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
-    print("|cff33ff99----------------------------------------|r")
-end
 
 ------------------------------------------------------------
 -- Help
