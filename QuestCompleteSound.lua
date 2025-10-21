@@ -27,7 +27,7 @@ function QCS_Init(reset)
 end
 
 ------------------------------------------------------------
--- QCS_GetVersion: Supports both Retail & Classic APIs
+-- QCS_GetVersion: Supports only Retail APIs
 ------------------------------------------------------------
 local function QCS_GetVersion()
     if C_AddOns and C_AddOns.GetAddOnMetadata then
@@ -262,59 +262,45 @@ end
 -- Event: QUEST_LOG_UPDATE (play sound when quest ready)
 ------------------------------------------------------------
 local fullyCompleted = {}
-f:RegisterEvent("QUEST_LOG_UPDATE")
 
-f:SetScript("OnEvent", function(self, event, ...)
-    if event == "QUEST_LOG_UPDATE" then
-        local numEntries = C_QuestLog.GetNumQuestLogEntries()
-        for i = 1, numEntries do
-            local info = C_QuestLog.GetInfo(i)
-            if info and not info.isHeader and info.questID then
-                local objectives = C_QuestLog.GetQuestObjectives(info.questID)
-                if objectives and #objectives > 0 then
-                    local allDone = true
-                    for _, obj in ipairs(objectives) do
-                        if not obj.finished then
-                            allDone = false
-                            break
-                        end
+local function QCS_CheckQuestProgress()
+    local numEntries = C_QuestLog.GetNumQuestLogEntries()
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if info and not info.isHeader and info.questID then
+            local objectives = C_QuestLog.GetQuestObjectives(info.questID)
+            if objectives and #objectives > 0 then
+                local allDone = true
+                for _, obj in ipairs(objectives) do
+                    if not obj.finished then
+                        allDone = false
+                        break
                     end
+                end
 
-                    -- If all objectives done and not previously marked complete
-                    if allDone and not fullyCompleted[info.questID] then
-                        fullyCompleted[info.questID] = true
-                        PlaySound(6199, "Master")
+                -- If all objectives done and not previously marked complete
+                if allDone and not fullyCompleted[info.questID] then
+                    fullyCompleted[info.questID] = true
+                    PlaySound(6199, "Master")
 
-                        -- Determine quest type
-                        local isTask = C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(info.questID)
-                        local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)
+                    -- Determine quest type
+                    local isTask = C_QuestLog.IsQuestTask and C_QuestLog.IsQuestTask(info.questID)
+                    local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(info.questID)
 
-                        if isTask or isWorld then
-                            -- Bonus or world quest
-                            print("|cff33ff99QCS:|r |cffffff00" ..
-                                (info.title or info.questID) .. "|r |cff00ff00is done!|r")
-                        else
-                            -- Normal quest
-                            print("|cff33ff99QCS:|r |cffffff00" ..
-                                (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
-                        end
+                    if isTask or isWorld then
+                        -- Bonus or world quest
+                        print("|cff33ff99QCS:|r |cffffff00" ..
+                            (info.title or info.questID) .. "|r |cff00ff00is done!|r")
+                    else
+                        -- Normal quest
+                        print("|cff33ff99QCS:|r |cffffff00" ..
+                            (info.title or info.questID) .. "|r |cff00ff00is ready to turn in!|r")
                     end
                 end
             end
         end
-    elseif event == "QUEST_ACCEPTED" then
-        local arg1, arg2 = ...
-        local questID = arg2 or arg1
-        if QCS_AutoTrack and questID then
-            QCS_TryAutoTrack(questID)
-        end
-    elseif event == "PLAYER_LOGIN" then
-        QCS_Init()
-        if QCS_ShowSplash then
-            QCS_Splash()
-        end
     end
-end)
+end
 
 ------------------------------------------------------------
 -- Help
@@ -412,6 +398,7 @@ f:SetScript("OnEvent", function(self, event, ...)
         end
 
     elseif event == "QUEST_LOG_UPDATE" then
+        QCS_CheckQuestProgress()
         QCS_RecolorQuestObjectives()
     end
 end)
