@@ -3,7 +3,7 @@
 **QuestCompleteSound** makes your questing more immersive.  
 It plays a sound when a quest is ready to turn in — and can optionally color quest progress messages (like “7/8 Wolves Slain”) in **red → yellow → green** based on how close you are to completion.
 
-Compatible with both **Retail** and **Classic** clients.
+Compatible only with **Retail**.
 
 ---
 
@@ -63,4 +63,4 @@ Your settings persist between sessions via these variables:
 - The Blizzard tracker limit of **25 quests** still applies — new quests can’t be added automatically beyond that.  
 - You can safely toggle features on/off at any time.  
 - Sound and colorization features work independently — use one or both.  
-- Fully compatible with **Retail** and **Classic**.
+- Only compatible with **Retail**.
