@@ -13,7 +13,7 @@ function QCS_Init(reset)
     if reset then
         QCS_AutoTrack     = false
         QCS_DebugTrack    = false
-        QCS_ShowSplash    = false
+        QCS_ShowSplash    = true
         QCS_ColorProgress = false
         print("|cff33ff99QCS:|r All settings have been reset to defaults.")
         return
@@ -21,7 +21,7 @@ function QCS_Init(reset)
 
     if QCS_AutoTrack     == nil then QCS_AutoTrack     = false end
     if QCS_DebugTrack    == nil then QCS_DebugTrack    = false end
-    if QCS_ShowSplash    == nil then QCS_ShowSplash    = false  end
+    if QCS_ShowSplash    == nil then QCS_ShowSplash    = true  end
     if QCS_ColorProgress == nil then QCS_ColorProgress = false end
 
 end
@@ -311,7 +311,7 @@ end)
 local function QCS_Splash()
     local version, atState, spState, coState = QCS_GetStateStrings()
     print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99QuestCompleteSound (QCS)|r |cff888888v" .. version .. "|r")
+    print("|cff33ff99QuestCompleteSound (QCS)|r |cff00ff00v" .. version .. "|r")
     print("|cff33ff99----------------------------------------|r")
     print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
     print("|cff33ff99----------------------------------------|r")
