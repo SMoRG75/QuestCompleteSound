@@ -14,10 +14,11 @@ Compatible only with **Retail**.
 
 - 🧩 **Quest Progress Colors (UIErrorsFrame)**  
   Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
-  Toggle with `/qcs color`.
+  Toggle with `/qcs color`, `/qcs col`.
 
 - 📋 **Automatic Quest Tracking**  
   Automatically tracks newly accepted quests in your quest tracker.
+Toggle with `/qcs autotrack`, `/qcs at`.  
 
 - 🪄 **Splash Screen & Help**  
   Shows version, AutoTrack, and colorization state at login or via `/qcs splash`.
@@ -33,7 +34,9 @@ Compatible only with **Retail**.
 | Command | Description |
 |----------|--------------|
 | `/qcs autotrack` | Toggle current autotrack state |
+| `/qcs at` | Toggle current autotrack state |
 | `/qcs color` | Toggle or disable progress colorization |
+| `/qcs col` | Toggle or disable progress colorization |
 | `/qcs splash` | Toggle or disable splash screen on login |
 | `/qcs debugtrack` | Toggle detailed tracking debug output |
 | `/qcs reset` | Reset all settings to defaults |
@@ -47,6 +50,7 @@ Your settings persist between sessions via these variables:
 
 | Variable | Purpose |
 |-----------|----------|
+| `QCS_DB` | Now contains the following variables |
 | `QCS_AutoTrack` | Automatically track newly accepted quests |
 | `QCS_DebugTrack` | Enable detailed debug logging |
 | `QCS_ShowSplash` | Show splash screen at login |
