@@ -9,23 +9,23 @@ Compatible only with **Retail**.
 
 ## 🎵 Features
 
-- 🔔 **Quest Completion Sound**  
-  Plays a sound when all objectives for a quest are complete.
+🔔 **Quest Completion Sound**  
+Plays a sound when all objectives for a quest are complete.
 
-- 🧩 **Quest Progress Colors (UIErrorsFrame)**  
-  Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
-  Toggle with `/qcs color`, `/qcs col`.
+🧩 **Quest Progress Colors (UIErrorsFrame)**  
+Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
+Toggle with `/qcs color`, `/qcs col`.
 
-- 📋 **Automatic Quest Tracking**  
-  Automatically tracks newly accepted quests in your quest tracker.
+📋 **Automatic Quest Tracking**  
+Automatically tracks newly accepted quests in your quest tracker.
 Toggle with `/qcs autotrack`, `/qcs at`.  
 
-- 🪄 **Splash Screen & Help**  
-  Shows version, AutoTrack, and colorization state at login or via `/qcs splash`.
+🪄 **Splash Screen & Help**  
+Shows version, AutoTrack, and colorization state at login or via `/qcs splash`.
 
-- 🧪 **Debug & Reset Tools**  
-  - `/qcs debugtrack` – shows detailed tracking debug messages  
-  - `/qcs reset` – resets all settings to default
+🧪 **Debug & Reset Tools**  
+`/qcs debugtrack` – shows detailed tracking debug messages  
+`/qcs reset` – resets all settings to default
 
 ---
 
@@ -34,11 +34,14 @@ Toggle with `/qcs autotrack`, `/qcs at`.
 | Command | Description |
 |----------|--------------|
 | `/qcs autotrack` | Toggle current autotrack state |
-| `/qcs at` | Toggle current autotrack state |
-| `/qcs color` | Toggle or disable progress colorization |
-| `/qcs col` | Toggle or disable progress colorization |
+| `/qcs at` | Shorthand for autotrack |
+| `/qcs color` | Toggle progress colorization |
+| `/qcs col` | Shorthand for color |
+| `/qcs hideach` | Toggle hiding completed achievements |
+| `/qcs ha` | Shorthand for hideach |
 | `/qcs splash` | Toggle or disable splash screen on login |
 | `/qcs debugtrack` | Toggle detailed tracking debug output |
+| `/qcs dbg` | Shorthand for debugtrack |
 | `/qcs reset` | Reset all settings to defaults |
 | `/qcs help` | Display command overview |
 
@@ -51,10 +54,11 @@ Your settings persist between sessions via these variables:
 | Variable | Purpose |
 |-----------|----------|
 | `QCS_DB` | Now contains the following variables |
-| `QCS_AutoTrack` | Automatically track newly accepted quests |
-| `QCS_DebugTrack` | Enable detailed debug logging |
-| `QCS_ShowSplash` | Show splash screen at login |
-| `QCS_ColorProgress` | Color quest progress messages (red → green) |
+| `AutoTrack` | Automatically track newly accepted quests |
+| `DebugTrack` | Enable detailed debug logging |
+| `ShowSplash` | Show splash screen at login |
+| `ColorProgress` | Color quest progress messages (red → green) |
+| `HideDoneAchievements` | Show or Hide completed achievements |
 
 ---
 

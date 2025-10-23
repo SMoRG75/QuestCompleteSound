@@ -1,3 +1,15 @@
+🧾 QuestCompleteSound v1.4
+
+New Features & Improvements:
+
+🧩 Achievement panel can now automatically hide or show completed achievements
+Controlled via /qcs hideach or /qcs ha
+
+Setting is saved and correctly restored after reload
+
+⚙️ The reset command now also updates the achievement filter
+
+🎨 Code refactored and organized under the QCS namespace with persistent QCS_DB SavedVariables
 ✨ Feature Highlights
 v1.3.1 - Made addon more stable
 
@@ -14,7 +26,7 @@ Plays a satisfying sound when all quest objectives are done — you’ll know in
 Automatically track any quest you accept. Toggle with:
 /qcs autotrack, at
 
-🧭 Optional coloring of progress
+🎨 Optional coloring of progress
 Automatically show the progress in a color from red to green. Toggle with:
 /qcs color, col
 

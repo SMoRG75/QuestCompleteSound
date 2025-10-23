@@ -15,7 +15,8 @@ QCS.defaults = {
     AutoTrack     = false,
     DebugTrack    = false,
     ShowSplash    = true,
-    ColorProgress = false
+    ColorProgress = false,
+    HideDoneAchievements = false
 }
 
 ------------------------------------------------------------
@@ -43,6 +44,29 @@ local function clamp01(x)
 end
 
 ------------------------------------------------------------
+-- Apply the achievement filter according to saved setting
+------------------------------------------------------------
+local function QCS_ApplyAchievementFilter()
+    if not C_AddOns.IsAddOnLoaded("Blizzard_AchievementUI") then return end
+
+    local filter = QCS.DB.HideDoneAchievements and ACHIEVEMENT_FILTER_INCOMPLETE or ACHIEVEMENT_FILTER_ALL
+
+    if AchievementFrame and AchievementFrame_SetFilter then
+        AchievementFrame_SetFilter(filter)
+
+        -- Update dropdown UI
+        if AchievementFrame.Header and AchievementFrame.Header.FilterDropDown then
+            UIDropDownMenu_SetSelectedValue(AchievementFrame.Header.FilterDropDown, filter)
+        end
+
+        -- Refresh category tree so change is visible immediately
+        if AchievementFrameCategories_Update then
+            AchievementFrameCategories_Update()
+        end
+    end
+end
+
+------------------------------------------------------------
 -- QCS_Init & Reset: ensure saved variables exist
 ------------------------------------------------------------
 function QCS.Init(reset)
@@ -63,6 +87,15 @@ function QCS.Init(reset)
 
     if reset then
         print("|cff33ff99QCS:|r All settings have been reset to defaults.")
+
+        -- 🟢 Apply Achievement filter after reset
+        if not C_AddOns.IsAddOnLoaded("Blizzard_AchievementUI") then
+            C_AddOns.LoadAddOn("Blizzard_AchievementUI")
+        end
+        C_Timer.After(0.1, function()
+            QCS_ApplyAchievementFilter()
+            print("|cff33ff99QCS:|r Achievement filter reset to show all achievements.")
+        end)
     end
 end
 
@@ -78,7 +111,8 @@ local function QCS_GetStateStrings()
     local atState = QCS.DB.AutoTrack     and "|cff00ff00ON|r" or "|cffff0000OFF|r"
     local spState = QCS.DB.ShowSplash    and "|cff00ff00ON|r" or "|cffff0000OFF|r"
     local coState = QCS.DB.ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-    return version, atState, spState, coState
+    local loState = QCS.DB.HideDoneAchievements and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    return version, atState, spState, coState, loState
 end
 
 ------------------------------------------------------------
@@ -272,13 +306,13 @@ end
 -- Splash
 ------------------------------------------------------------
 local function QCS_Splash()
-    local version, atState, spState, coState = QCS_GetStateStrings()
-    print("|cff33ff99----------------------------------------|r")
+    local version, atState, spState, coState, loState = QCS_GetStateStrings()
+    print("|cff33ff99-----------------------------------|r")
     print("|cff33ff99QuestCompleteSound (QCS)|r |cffffffffv" .. version .. "|r")
-    print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
+    print("|cff33ff99------------------------------------------------------------------------------|r")
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState)
     print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
-    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99------------------------------------------------------------------------------|r")
 end
 
 ------------------------------------------------------------
@@ -329,21 +363,23 @@ end
 -- Help
 ------------------------------------------------------------
 local function QCS_Help()
-    local version, atState, spState, coState = QCS_GetStateStrings()
-    print("|cff33ff99----------------------------------------|r")
+    local version, atState, spState, coState, loState = QCS_GetStateStrings()
+    print("|cff33ff99-----------------------------------|r")
     print("|cff33ff99QuestCompleteSound (QCS)|r |cffffffffv" .. version .. "|r")
-    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99-----------------------------------|r")
     print("|cff00ff00/qcs autotrack|r   |cffcccccc- Toggle automatic quest tracking|r")
     print("|cff00ff00/qcs at|r          |cffcccccc- Shorthand for autotrack|r")
     print("|cff00ff00/qcs color|r       |cffcccccc- Toggle progress colorization|r")
     print("|cff00ff00/qcs col|r         |cffcccccc- Shorthand for color|r")
+    print("|cff00ff00/qcs hideach|r     |cffcccccc- Toggle hiding completed achievements|r")
+    print("|cff00ff00/qcs ha|r          |cffcccccc- Shorthand for hideach|r")
     print("|cff00ff00/qcs splash|r      |cffcccccc- Toggle splash on login|r")
     print("|cff00ff00/qcs debugtrack|r  |cffcccccc- Toggle verbose tracking debug|r")
     print("|cff00ff00/qcs dbg|r         |cffcccccc- Shorthand for debugtrack|r")
     print("|cff00ff00/qcs reset|r       |cffcccccc- Reset all settings to defaults|r")
-    print("|cff33ff99----------------------------------------|r")
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99Color:|r " .. coState)
-    print("|cff33ff99----------------------------------------|r")
+    print("|cff33ff99------------------------------------------------------------------------------|r")
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState)
+    print("|cff33ff99------------------------------------------------------------------------------|r")
 end
 
 ------------------------------------------------------------
@@ -378,6 +414,17 @@ SlashCmdList["QCS"] = function(msg)
     elseif msg == "debugtrack" or msg == "dbg" then
         toggle("DebugTrack", "Debug tracking")
 
+    elseif msg == "hideach" or msg == "ha" then
+        QCS.DB.HideDoneAchievements = not QCS.DB.HideDoneAchievements
+        local s = QCS.DB.HideDoneAchievements and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+        print("|cff33ff99QCS:|r Hide completed achievements is " .. s)
+
+        if not C_AddOns.IsAddOnLoaded("Blizzard_AchievementUI") then
+            C_AddOns.LoadAddOn("Blizzard_AchievementUI")
+        end
+
+        QCS_ApplyAchievementFilter()
+
     elseif msg == "reset" then
         QCS.Init(true)
 
@@ -385,8 +432,8 @@ SlashCmdList["QCS"] = function(msg)
         QCS_Help()
 
     else
-        local version, at, sp, co = QCS_GetStateStrings()
-        print("|cff33ff99QCS|r v" .. version .. " — Auto:" .. at .. " Splash:" .. sp .. " Color:" .. co)
+        local version, at, sp, co, lo = QCS_GetStateStrings()
+        print("|cff33ff99QCS|r v" .. version .. " — AutoTrackQuests:" .. at .. " Splash:" .. sp .. " ColorProgress:" .. co .. " HideDoneAchievements:" .. lo)
         print("|cffccccccCommands:|r help for more info")
     end
 end
@@ -397,6 +444,7 @@ end
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("QUEST_ACCEPTED")
 f:RegisterEvent("QUEST_LOG_UPDATE")
+f:RegisterEvent("ADDON_LOADED")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
@@ -404,8 +452,18 @@ f:SetScript("OnEvent", function(self, event, ...)
         if QCS.DB.ShowSplash then
             QCS_Splash()
         end
+
         if QCS.DB.ColorProgress then
             QCS_EnableCustomInfoMessages()
+        end
+
+        -- Apply saved preference when logging in (only if already loaded)
+        QCS_ApplyAchievementFilter()
+
+     elseif event == "ADDON_LOADED" then
+        local addonName = ...
+        if addonName == "Blizzard_AchievementUI" then
+            C_Timer.After(0.1, QCS_ApplyAchievementFilter)
         end
 
     elseif event == "QUEST_ACCEPTED" then
