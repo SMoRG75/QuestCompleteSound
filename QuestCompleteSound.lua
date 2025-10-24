@@ -14,9 +14,10 @@ local f = CreateFrame("Frame")
 QCS.defaults = {
     AutoTrack     = false,
     DebugTrack    = false,
-    ShowSplash    = true,
+    ShowSplash    = false,
     ColorProgress = false,
-    HideDoneAchievements = false
+    HideDoneAchievements = false,
+    SoundOnly = true
 }
 
 ------------------------------------------------------------
@@ -112,7 +113,8 @@ local function QCS_GetStateStrings()
     local spState = QCS.DB.ShowSplash    and "|cff00ff00ON|r" or "|cffff0000OFF|r"
     local coState = QCS.DB.ColorProgress and "|cff00ff00ON|r" or "|cffff0000OFF|r"
     local loState = QCS.DB.HideDoneAchievements and "|cff00ff00ON|r" or "|cffff0000OFF|r"
-    return version, atState, spState, coState, loState
+    local soState = QCS.DB.SoundOnly and "|cff00ff00ON|r" or "|cffff0000OFF|r"
+    return version, atState, spState, coState, loState, soState
 end
 
 ------------------------------------------------------------
@@ -306,11 +308,11 @@ end
 -- Splash
 ------------------------------------------------------------
 local function QCS_Splash()
-    local version, atState, spState, coState, loState = QCS_GetStateStrings()
+    local version, atState, spState, coState, loState, soState = QCS_GetStateStrings()
     print("|cff33ff99-----------------------------------|r")
     print("|cff33ff99QuestCompleteSound (QCS)|r |cffffffffv" .. version .. "|r")
     print("|cff33ff99------------------------------------------------------------------------------|r")
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState)
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState .. "  |cff33ff99SoundOnly:|r " .. soState .. "|r")
     print("|cffccccccType |cff00ff00/qcs help|r for command list.|r")
     print("|cff33ff99------------------------------------------------------------------------------|r")
 end
@@ -340,6 +342,10 @@ local function QCS_CheckQuestProgress()
                     QCS.fullyCompleted[info.questID] = true
                     PlaySound(6199, "Master")
 
+                    if QCS.DB.SoundOnly then
+                        return
+                    end
+
                     -- Determine quest type
                     local isTask = C_QuestLog.IsQuestTask(info.questID)
                     local isWorld = C_QuestLog.IsWorldQuest(info.questID)
@@ -363,10 +369,12 @@ end
 -- Help
 ------------------------------------------------------------
 local function QCS_Help()
-    local version, atState, spState, coState, loState = QCS_GetStateStrings()
+    local version, atState, spState, coState, loState, soState = QCS_GetStateStrings()
     print("|cff33ff99-----------------------------------|r")
     print("|cff33ff99QuestCompleteSound (QCS)|r |cffffffffv" .. version .. "|r")
     print("|cff33ff99-----------------------------------|r")
+    print("|cff00ff00/qcs soundonly|r   |cffcccccc- Toggle sound-only mode|r")
+    print("|cff00ff00/qcs so|r          |cffcccccc- Shorthand for soundonly|r")
     print("|cff00ff00/qcs autotrack|r   |cffcccccc- Toggle automatic quest tracking|r")
     print("|cff00ff00/qcs at|r          |cffcccccc- Shorthand for autotrack|r")
     print("|cff00ff00/qcs color|r       |cffcccccc- Toggle progress colorization|r")
@@ -378,7 +386,7 @@ local function QCS_Help()
     print("|cff00ff00/qcs dbg|r         |cffcccccc- Shorthand for debugtrack|r")
     print("|cff00ff00/qcs reset|r       |cffcccccc- Reset all settings to defaults|r")
     print("|cff33ff99------------------------------------------------------------------------------|r")
-    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState)
+    print("|cff33ff99AutoTrack:|r " .. atState .. "  |cff33ff99Splash:|r " .. spState .. "  |cff33ff99ColorProgress:|r " .. coState .. "  |cff33ff99HideDoneAchievements:|r " .. loState .. "  |cff33ff99SoundOnly:|r " .. soState .. "|r")
     print("|cff33ff99------------------------------------------------------------------------------|r")
 end
 
@@ -431,9 +439,12 @@ SlashCmdList["QCS"] = function(msg)
     elseif msg == "help" then
         QCS_Help()
 
+    elseif msg == "soundonly" or msg == "so" then
+        toggle("SoundOnly", "Sound-only mode is")
+
     else
-        local version, at, sp, co, lo = QCS_GetStateStrings()
-        print("|cff33ff99QCS|r v" .. version .. " — AutoTrackQuests:" .. at .. " Splash:" .. sp .. " ColorProgress:" .. co .. " HideDoneAchievements:" .. lo)
+        local version, at, sp, co, lo, so = QCS_GetStateStrings()
+        print("|cff33ff99QCS|r v" .. version .. " — AutoTrackQuests:" .. at .. " Splash:" .. sp .. " ColorProgress:" .. co .. " HideDoneAchievements:" .. lo .. " SoundOnly:" .. so)
         print("|cffccccccCommands:|r help for more info")
     end
 end

@@ -1,5 +1,12 @@
-🧾 QuestCompleteSound v1.4
+🧾 QuestCompleteSound
 
+New Features & Improvements:
+
+v1.4.1 - 🧩 Addon now starts with only Quest Complete Sound turned on.
+No QCS messages are show, they have to be turned on manually
+
+v1.4.0 - 🧩 Achievement panel can now automatically hide or show completed achievements
+Controlled via /qcs hideach or /qcs ha
 New Features & Improvements:
 
 🧩 Achievement panel can now automatically hide or show completed achievements

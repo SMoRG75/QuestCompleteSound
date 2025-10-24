@@ -11,6 +11,7 @@ Compatible only with **Retail**.
 
 🔔 **Quest Completion Sound**  
 Plays a sound when all objectives for a quest are complete.
+Toggle with `/qcs soundonly`, `/qcs so`.
 
 🧩 **Quest Progress Colors (UIErrorsFrame)**  
 Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
@@ -33,6 +34,8 @@ Shows version, AutoTrack, and colorization state at login or via `/qcs splash`.
 
 | Command | Description |
 |----------|--------------|
+| `/qcs soundonly` | Toggle sound-only mode |
+| `/qcs so` | Shorthand for soundonly |
 | `/qcs autotrack` | Toggle current autotrack state |
 | `/qcs at` | Shorthand for autotrack |
 | `/qcs color` | Toggle progress colorization |
@@ -59,6 +62,7 @@ Your settings persist between sessions via these variables:
 | `ShowSplash` | Show splash screen at login |
 | `ColorProgress` | Color quest progress messages (red → green) |
 | `HideDoneAchievements` | Show or Hide completed achievements |
+| `SoundOnly` | Turn on or off Sound Only |
 
 ---
 
