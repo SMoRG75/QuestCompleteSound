@@ -243,6 +243,101 @@ local function QCS_EnableCustomInfoMessages()
 end
 
 ------------------------------------------------------------
+-- CharacterFrame: show equipped iLvl
+------------------------------------------------------------
+QCS._ilvlRetryPending = false
+QCS._characterFrameHooked = false
+
+local function QCS_GetEquippedItemLevel()
+    if type(GetAverageItemLevel) == "function" then
+        local avg, equipped = GetAverageItemLevel()
+        if type(equipped) == "number" and equipped > 0 then
+            return equipped
+        end
+        if type(avg) == "number" and avg > 0 then
+            return avg
+        end
+    end
+
+    local function getItemLevelFromLink(link)
+        if C_Item and type(C_Item.GetDetailedItemLevelInfo) == "function" then
+            return C_Item.GetDetailedItemLevelInfo(link)
+        end
+        local legacy = rawget(_G, "GetDetailedItemLevelInfo")
+        if type(legacy) == "function" then
+            return legacy(link)
+        end
+        return nil
+    end
+
+    local total, count = 0, 0
+    local missingInfo = false
+
+    for slot = 1, 17 do
+        if slot ~= 4 then -- skip shirt slot
+            local link = GetInventoryItemLink("player", slot)
+            if link then
+                local ilvl = getItemLevelFromLink(link)
+                if ilvl then
+                    total = total + ilvl
+                    count = count + 1
+                else
+                    missingInfo = true
+                end
+            end
+        end
+    end
+
+    if count == 0 then
+        return nil
+    end
+
+    return (total / count), missingInfo
+end
+
+local function QCS_UpdateCharacterIlvlText()
+    if not QCS.iLvlText then return end
+
+    local ilvl, missingInfo = QCS_GetEquippedItemLevel()
+    if not ilvl then
+        QCS.iLvlText:SetText("")
+        return
+    end
+
+    QCS.iLvlText:SetText(string.format("iLvl: %.1f", ilvl))
+
+    if missingInfo and not QCS._ilvlRetryPending then
+        QCS._ilvlRetryPending = true
+        C_Timer.After(0.5, function()
+            QCS._ilvlRetryPending = false
+            QCS_UpdateCharacterIlvlText()
+        end)
+    end
+end
+
+local function QCS_EnsureCharacterIlvlUI()
+    local characterFrame = rawget(_G, "CharacterFrame")
+    if not characterFrame or not characterFrame.CreateFontString then
+        return false
+    end
+
+    if not QCS.iLvlText then
+        QCS.iLvlText = characterFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        QCS.iLvlText:SetPoint("TOPLEFT", characterFrame, "TOPLEFT", 72, -38)
+        QCS.iLvlText:SetJustifyH("LEFT")
+        QCS.iLvlText:SetText("")
+    end
+
+    if not QCS._characterFrameHooked and characterFrame.HookScript then
+        QCS._characterFrameHooked = true
+        characterFrame:HookScript("OnShow", QCS_UpdateCharacterIlvlText)
+    end
+
+    QCS_UpdateCharacterIlvlText()
+    return true
+end
+
+------------------------------------------------------------
 -- Helpers: trackable types
 ------------------------------------------------------------
 local function QCS_HandleTrackableTypes(questID)
@@ -456,6 +551,8 @@ f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("QUEST_ACCEPTED")
 f:RegisterEvent("QUEST_LOG_UPDATE")
 f:RegisterEvent("ADDON_LOADED")
+f:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+f:RegisterEvent("PLAYER_AVG_ITEM_LEVEL_UPDATE")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
@@ -471,11 +568,19 @@ f:SetScript("OnEvent", function(self, event, ...)
         -- Apply saved preference when logging in (only if already loaded)
         QCS_ApplyAchievementFilter()
 
+        -- If Character UI is already loaded, attach iLvl display.
+        QCS_EnsureCharacterIlvlUI()
+
      elseif event == "ADDON_LOADED" then
         local addonName = ...
         if addonName == "Blizzard_AchievementUI" then
             C_Timer.After(0.1, QCS_ApplyAchievementFilter)
+        elseif addonName == "Blizzard_CharacterUI" then
+            C_Timer.After(0, QCS_EnsureCharacterIlvlUI)
         end
+
+    elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_AVG_ITEM_LEVEL_UPDATE" then
+        QCS_UpdateCharacterIlvlText()
 
     elseif event == "QUEST_ACCEPTED" then
         if not QCS.DB.AutoTrack then return end

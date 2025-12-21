@@ -13,7 +13,7 @@ Compatible only with **Retail**.
 Plays a sound when all objectives for a quest are complete.
 Toggle with `/qcs soundonly`, `/qcs so`.
 
-🧩 **Quest Progress Colors (UIErrorsFrame)**  
+🧩 **Quest Progress Colors**  
 Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
 Toggle with `/qcs color`, `/qcs col`.
 
@@ -29,7 +29,7 @@ Always hide your completed Achievements in the Achievements Frame.
 Toggle with `/qcs hideach`, `/qcs ha`.  
 
 🪄 **Splash Screen & Help**  
-Shows version, AutoTrack, and colorization state at login or via
+Shows version, AutoTrack, and colorization state at login or via  
 `/qcs splash`.
 
 🧪 **Debug & Reset Tools**  
