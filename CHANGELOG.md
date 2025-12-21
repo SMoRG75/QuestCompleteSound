@@ -2,7 +2,7 @@
 
 New Features & Improvements:
 
-v1.4.2 - 📌 Shows your equipped iLvl on the Character panel.
+v1.4.2 - 📌 Shows your equipped iLvl on the PlayerFrame (portrait/unit frame).
 
 v1.4.1 - 🧩 Addon now starts with only Quest Complete Sound turned on.
 No QCS messages are show, they have to be turned on manually

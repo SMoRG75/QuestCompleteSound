@@ -243,10 +243,11 @@ local function QCS_EnableCustomInfoMessages()
 end
 
 ------------------------------------------------------------
--- CharacterFrame: show equipped iLvl
+-- PlayerFrame: show equipped iLvl
 ------------------------------------------------------------
 QCS._ilvlRetryPending = false
-QCS._characterFrameHooked = false
+QCS._playerFrameHooked = false
+QCS._ilvlEnsureRetryPending = false
 
 local function QCS_GetEquippedItemLevel()
     if type(GetAverageItemLevel) == "function" then
@@ -300,7 +301,7 @@ local function QCS_UpdateCharacterIlvlText()
 
     local ilvl, missingInfo = QCS_GetEquippedItemLevel()
     if not ilvl then
-        QCS.iLvlText:SetText("")
+        QCS.iLvlText:SetText("iLvl: --")
         return
     end
 
@@ -315,26 +316,134 @@ local function QCS_UpdateCharacterIlvlText()
     end
 end
 
-local function QCS_EnsureCharacterIlvlUI()
-    local characterFrame = rawget(_G, "CharacterFrame")
-    if not characterFrame or not characterFrame.CreateFontString then
+local function QCS_GetPlayerPortraitFrame(playerFrame)
+    if not playerFrame then return nil end
+
+    local portrait = rawget(_G, "PlayerPortrait") or rawget(_G, "PlayerFramePortrait")
+    if portrait then return portrait end
+
+    local container = rawget(playerFrame, "PlayerFrameContainer")
+    local containerPortrait = container and (rawget(container, "PlayerPortrait") or rawget(container, "Portrait"))
+    if containerPortrait then return containerPortrait end
+
+    local content = rawget(playerFrame, "PlayerFrameContent")
+    local main = content and rawget(content, "PlayerFrameContentMain")
+    portrait = main and rawget(main, "Portrait")
+    if portrait then return portrait end
+
+    portrait = rawget(playerFrame, "portrait")
+    return portrait
+end
+
+local function QCS_GetPlayerHealthBarFrame(playerFrame)
+    if not playerFrame then return nil end
+
+    local globalHealth = rawget(_G, "PlayerFrameHealthBar")
+    if globalHealth then return globalHealth end
+
+    local container = rawget(playerFrame, "PlayerFrameContainer")
+    local containerHealth = container and (rawget(container, "HealthBar") or rawget(container, "PlayerFrameHealthBar"))
+    if containerHealth then return containerHealth end
+
+    local content = rawget(playerFrame, "PlayerFrameContent")
+    local main = content and rawget(content, "PlayerFrameContentMain")
+    local healthBarsContainer = main and rawget(main, "HealthBarsContainer")
+    local mainHealth = healthBarsContainer and (rawget(healthBarsContainer, "HealthBar") or rawget(healthBarsContainer, "PlayerFrameHealthBar"))
+    if mainHealth then return mainHealth end
+
+    local fallback = rawget(playerFrame, "healthbar") or rawget(playerFrame, "HealthBar")
+    return fallback
+end
+
+local function QCS_UpdatePlayerFrameIlvlAnchor()
+    if not QCS.iLvlHolder or not QCS.iLvlText then
         return false
     end
 
+    local playerFrame = rawget(_G, "PlayerFrame")
+    if not playerFrame then
+        QCS.iLvlHolder:Hide()
+        return false
+    end
+
+    QCS.iLvlHolder:ClearAllPoints()
+
+    local healthBar = QCS_GetPlayerHealthBarFrame(playerFrame)
+    local portrait = QCS_GetPlayerPortraitFrame(playerFrame)
+
+    if healthBar and healthBar.GetCenter then
+        -- Place near the top-right of the HP bar (close to the red bar in the default/modern layout)
+        QCS.iLvlHolder:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -75, 10)
+    elseif portrait and portrait.GetCenter then
+        QCS.iLvlHolder:SetPoint("BOTTOM", portrait, "BOTTOM", 0, 4)
+    else
+        QCS.iLvlHolder:SetPoint("TOPLEFT", playerFrame, "TOPLEFT", 70, -22)
+    end
+
+    if playerFrame.IsShown and playerFrame:IsShown() then
+        QCS.iLvlHolder:Show()
+    else
+        QCS.iLvlHolder:Hide()
+    end
+
+    return true
+end
+
+local function QCS_EnsurePlayerFrameIlvlUI()
+    local playerFrame = rawget(_G, "PlayerFrame")
+    if not playerFrame then
+        return false
+    end
+
+    if not QCS.iLvlHolder then
+        QCS.iLvlHolder = CreateFrame("Frame", "QCS_PlayerFrameIlvlHolder", UIParent)
+        QCS.iLvlHolder:SetSize(1, 1)
+        QCS.iLvlHolder:SetFrameStrata("HIGH")
+        QCS.iLvlHolder:Hide()
+    end
+
     if not QCS.iLvlText then
-        QCS.iLvlText = characterFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        QCS.iLvlText:SetPoint("TOPLEFT", characterFrame, "TOPLEFT", 72, -38)
-        QCS.iLvlText:SetJustifyH("LEFT")
-        QCS.iLvlText:SetText("")
+        QCS.iLvlText = QCS.iLvlHolder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        QCS.iLvlText:SetPoint("CENTER", QCS.iLvlHolder, "CENTER", 0, 0)
+        QCS.iLvlText:SetJustifyH("RIGHT")
+        QCS.iLvlText:SetText("iLvl: --")
     end
 
-    if not QCS._characterFrameHooked and characterFrame.HookScript then
-        QCS._characterFrameHooked = true
-        characterFrame:HookScript("OnShow", QCS_UpdateCharacterIlvlText)
+    if not QCS._playerFrameHooked and playerFrame.HookScript then
+        QCS._playerFrameHooked = true
+        playerFrame:HookScript("OnShow", function()
+            QCS_UpdatePlayerFrameIlvlAnchor()
+            QCS_UpdateCharacterIlvlText()
+        end)
+        playerFrame:HookScript("OnHide", function()
+            if QCS.iLvlHolder then QCS.iLvlHolder:Hide() end
+        end)
     end
 
+    QCS_UpdatePlayerFrameIlvlAnchor()
     QCS_UpdateCharacterIlvlText()
     return true
+end
+
+local function QCS_TryEnsurePlayerFrameIlvlUI(retries)
+    retries = retries or 0
+    if QCS_EnsurePlayerFrameIlvlUI() then
+        return
+    end
+
+    if retries >= 10 then
+        return
+    end
+
+    if QCS._ilvlEnsureRetryPending then
+        return
+    end
+
+    QCS._ilvlEnsureRetryPending = true
+    C_Timer.After(0.2, function()
+        QCS._ilvlEnsureRetryPending = false
+        QCS_TryEnsurePlayerFrameIlvlUI(retries + 1)
+    end)
 end
 
 ------------------------------------------------------------
@@ -548,11 +657,14 @@ end
 -- Events
 ------------------------------------------------------------
 f:RegisterEvent("PLAYER_LOGIN")
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("QUEST_ACCEPTED")
 f:RegisterEvent("QUEST_LOG_UPDATE")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 f:RegisterEvent("PLAYER_AVG_ITEM_LEVEL_UPDATE")
+f:RegisterEvent("UNIT_INVENTORY_CHANGED")
+f:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
@@ -568,18 +680,35 @@ f:SetScript("OnEvent", function(self, event, ...)
         -- Apply saved preference when logging in (only if already loaded)
         QCS_ApplyAchievementFilter()
 
-        -- If Character UI is already loaded, attach iLvl display.
-        QCS_EnsureCharacterIlvlUI()
+        -- Ensure PlayerFrame iLvl display.
+        QCS_TryEnsurePlayerFrameIlvlUI(0)
+
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        QCS_TryEnsurePlayerFrameIlvlUI(0)
 
      elseif event == "ADDON_LOADED" then
         local addonName = ...
         if addonName == "Blizzard_AchievementUI" then
             C_Timer.After(0.1, QCS_ApplyAchievementFilter)
-        elseif addonName == "Blizzard_CharacterUI" then
-            C_Timer.After(0, QCS_EnsureCharacterIlvlUI)
         end
 
+    elseif event == "UNIT_INVENTORY_CHANGED" then
+        local unit = ...
+        if unit == "player" then
+            if not QCS.iLvlText then
+                QCS_TryEnsurePlayerFrameIlvlUI(0)
+            end
+            QCS_UpdateCharacterIlvlText()
+        end
+
+    elseif event == "EDIT_MODE_LAYOUTS_UPDATED" then
+        QCS_UpdatePlayerFrameIlvlAnchor()
+
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_AVG_ITEM_LEVEL_UPDATE" then
+        if not QCS.iLvlText then
+            QCS_TryEnsurePlayerFrameIlvlUI(0)
+        end
+        QCS_UpdatePlayerFrameIlvlAnchor()
         QCS_UpdateCharacterIlvlText()
 
     elseif event == "QUEST_ACCEPTED" then

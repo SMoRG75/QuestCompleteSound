@@ -17,8 +17,8 @@ Toggle with `/qcs soundonly`, `/qcs so`.
 Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
 Toggle with `/qcs color`, `/qcs col`.
 
-📌 **Character iLvl Display**
-Shows your equipped item level (iLvl) on the Character panel.
+📌 **PlayerFrame iLvl Display**
+Shows your equipped item level (iLvl) on your player portrait/unit frame.
 
 📋 **Automatic Quest Tracking**  
 Automatically tracks newly accepted quests in your quest tracker.
