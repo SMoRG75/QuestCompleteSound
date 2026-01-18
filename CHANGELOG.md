@@ -2,6 +2,8 @@
 
 New Features & Improvements:
 
+v1.4.2 - 🧩 I have made an Addon called SMoRGs QoL. This will be my new primary Addon.
+
 v1.4.1 - 🧩 Addon now starts with only Quest Complete Sound turned on.
 No QCS messages are show, they have to be turned on manually
 

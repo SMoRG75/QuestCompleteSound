@@ -3,6 +3,7 @@
 **QuestCompleteSound** makes your questing more immersive.  
 It plays a sound when a quest is ready to turn in — and can optionally color quest progress messages (like “7/8 Wolves Slain”) in **red → yellow → green** based on how close you are to completion.
 
+I have made a new Addon called SMoRGs QoL. This will be my new primary Addon.
 Compatible only with **Retail**.
 
 ---
