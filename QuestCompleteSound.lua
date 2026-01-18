@@ -398,7 +398,7 @@ local function QCS_EnsurePlayerFrameIlvlUI()
     if not QCS.iLvlHolder then
         QCS.iLvlHolder = CreateFrame("Frame", "QCS_PlayerFrameIlvlHolder", UIParent)
         QCS.iLvlHolder:SetSize(1, 1)
-        QCS.iLvlHolder:SetFrameStrata("HIGH")
+        QCS.iLvlHolder:SetFrameStrata("MEDIUM")
         QCS.iLvlHolder:Hide()
     end
 
