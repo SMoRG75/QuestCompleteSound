@@ -1,3 +1,5 @@
+[center][img]https://raw.githubusercontent.com/SMoRG75/QuestCompleteSound/main/output/QCS.png[/img][/center]
+
 [size=5][b]QuestCompleteSound[/b][/size]
 
 [b]Hear your quest progress:[/b] a worker voice line when you complete a quest objective, and another when the whole quest is done. That's all it does.
