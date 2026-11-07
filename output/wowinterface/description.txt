@@ -1,0 +1,66 @@
+[size=5][b]QuestCompleteSound[/b][/size]
+
+[b]Hear your quest progress:[/b] a worker voice line when you complete a quest objective, and another when the whole quest is done. That's all it does.
+
+Works in Retail and WoW Forever.
+
+
+[size=4][b]Moved to SMoRG's QoL[/b][/size]
+
+All the other settings have moved to my addon [url=https://www.wowinterface.com/downloads/info27251]SMoRG's QoL[/url]:
+[list]
+[*]Quest progress colors
+[*]Automatic quest tracking
+[*]Hide completed achievements
+[*]Splash screen
+[*]Debug output
+[*]Chat messages when a quest is done
+[/list]
+
+SMoRG's QoL plays the same sounds, so you only need one of the addons. If both are loaded, QuestCompleteSound stays silent so you don't hear every sound twice.
+
+
+[size=4][b]Sounds[/b][/size]
+
+[b]Horde (Peon)[/b], the default
+[list]
+[*]Objective complete: [i]"Work, work."[/i]
+[*]Quest complete: [i]"Work complete."[/i]
+[/list]
+
+[b]Alliance (Human worker)[/b]
+[list]
+[*]Objective complete: [i]"More work?"[/i]
+[*]Quest complete: [i]"Job's done!"[/i]
+[/list]
+
+When the last objective of a quest is completed, you only hear the quest complete sound.
+
+
+[size=4][b]Options window[/b][/size]
+
+Turn the sounds on or off and choose the sound profile in the options window. Open it from:
+[list]
+[*]the addon compartment menu by the minimap
+[*][b]Esc -> Options -> AddOns -> QuestCompleteSound[/b]
+[*][b]/qcs config[/b]
+[/list]
+
+
+[size=4][b]Chat commands[/b][/size]
+
+[list]
+[*][b]/qcs questsound[/b] or [b]/qcs qs[/b] - toggle the quest completion sound
+[*][b]/qcs objectivesound[/b] or [b]/qcs os[/b] - toggle the objective completion sound
+[*][b]/qcs soundprofile[/b] - switch between the Horde and Alliance sounds
+[*][b]/qcs config[/b] - open the options window
+[*][b]/qcs reset[/b] - reset all settings to defaults
+[*][b]/qcs help[/b] - display the command overview
+[/list]
+
+
+[size=4][b]Support[/b][/size]
+
+Bug reports and ideas are welcome in the comments here or on [url=https://github.com/SMoRG75/QuestCompleteSound/issues]GitHub[/url].
+
+Source code: [url=https://github.com/SMoRG75/QuestCompleteSound]github.com/SMoRG75/QuestCompleteSound[/url] (MIT license)

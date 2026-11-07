@@ -6,6 +6,8 @@
 ## IconTexture: Interface\AddOns\QuestCompleteSound\qcs
 ## SavedVariables: QCS_DB
 ## X-Curse-Project-ID: 1354943
+## X-Wago-ID: 4N2bg4NL
+## X-WoWI-ID: 27296
 ## X-Interface: 120105
 ## X-Category: Quests & Leveling
 ## X-License: MIT

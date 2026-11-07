@@ -1,0 +1,14 @@
+# BigWigs packager settings (https://github.com/BigWigsMods/packager).
+# Files and folders starting with a dot (.github, .vscode, .luarc.json,
+# .gitignore, this file) are never packaged.
+
+package-as: QuestCompleteSound
+
+# Upload the hand-written changelog instead of one generated from commits.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: text
+
+ignore:
+  - RELEASING.md
+  - output
