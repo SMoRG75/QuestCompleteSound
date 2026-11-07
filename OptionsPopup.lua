@@ -1,0 +1,301 @@
+------------------------------------------------------------
+-- QuestCompleteSound - Options popup
+-- A standalone, movable window opened from the addon compartment, the button
+-- on the Settings (AddOns) page or /qcs config. It is built from
+-- QCS.OptionSections, and every change goes through QCS.SetOption like the
+-- slash commands do.
+------------------------------------------------------------
+
+local ADDON_NAME, QCS = ...
+
+local POPUP_NAME = "QCS_OptionsPopup"
+local ICON = "Interface\\AddOns\\QuestCompleteSound\\qcs"
+
+local COLUMN_WIDTH = 340
+local PADDING_X = 18
+local CONTENT_TOP = 76     -- below the title bar, portrait and subtitle
+local FOOTER_HEIGHT = 44
+local HEADER_HEIGHT = 28
+local HEADER_ICON_SIZE = 18
+local DROPDOWN_WIDTH = 170
+local ROW_HEIGHT = 26
+local SECTION_GAP = 12
+
+local popup
+local controls = {}        -- every control has :Refresh()
+
+------------------------------------------------------------
+-- Controls
+------------------------------------------------------------
+local function QCS_Popup_ShowTooltip(owner, option)
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    GameTooltip:SetText(option.label, 1, 1, 1)
+    GameTooltip:AddLine(option.tooltip, nil, nil, nil, true)
+    GameTooltip:Show()
+end
+
+local function QCS_Popup_HideTooltip()
+    GameTooltip:Hide()
+end
+
+local function QCS_Popup_PlayCheckboxSound(checked)
+    if type(PlaySound) ~= "function" or not SOUNDKIT then return end
+    local sound = checked and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF
+    if sound then PlaySound(sound) end
+end
+
+local function QCS_Popup_CreateCheckbox(parent, option)
+    local checkbox = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
+    checkbox:SetSize(24, 24)
+
+    local label = checkbox.Text or checkbox.text
+    if not label then
+        label = checkbox:CreateFontString(nil, "ARTWORK")
+        label:SetPoint("LEFT", checkbox, "RIGHT", 2, 0)
+    end
+    label:SetFontObject("GameFontHighlight")
+    label:SetWidth(COLUMN_WIDTH - 30)
+    label:SetJustifyH("LEFT")
+    label:SetWordWrap(false)
+    label:SetText(option.label)
+    -- Let the label toggle the checkbox too.
+    checkbox:SetHitRectInsets(0, -math.min(COLUMN_WIDTH - 30, (label:GetStringWidth() or 0) + 6), 0, 0)
+
+    checkbox:SetScript("OnClick", function(self)
+        local checked = self:GetChecked() and true or false
+        QCS_Popup_PlayCheckboxSound(checked)
+        QCS.SetOption(option.key, checked)
+    end)
+    checkbox:SetScript("OnEnter", function(self) QCS_Popup_ShowTooltip(self, option) end)
+    checkbox:SetScript("OnLeave", QCS_Popup_HideTooltip)
+
+    function checkbox:Refresh()
+        self:SetChecked(QCS.DB[option.key] and true or false)
+    end
+    return checkbox
+end
+
+local function QCS_Popup_CreateDropdown(parent, option)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetSize(COLUMN_WIDTH, ROW_HEIGHT)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self) QCS_Popup_ShowTooltip(self, option) end)
+    row:SetScript("OnLeave", QCS_Popup_HideTooltip)
+
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", row, "LEFT", 4, 0)
+    label:SetPoint("RIGHT", row, "RIGHT", -(DROPDOWN_WIDTH + 10), 0) -- leave room for the dropdown
+    label:SetJustifyH("LEFT")
+    label:SetWordWrap(false)
+    label:SetText(option.label)
+
+    -- Blizzard's menu dropdown (11.0+); fall back to a button that cycles the values.
+    local ok, dropdown = pcall(CreateFrame, "DropdownButton", nil, row, "WowStyle1DropdownTemplate")
+    if ok and dropdown and type(dropdown.SetupMenu) == "function" then
+        dropdown:SetWidth(DROPDOWN_WIDTH)
+        dropdown:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+        dropdown:SetupMenu(function(_, rootDescription)
+            for _, entry in ipairs(option.values) do
+                rootDescription:CreateRadio(entry.label,
+                    function() return QCS.DB[option.key] == entry.value end,
+                    function() QCS.SetOption(option.key, entry.value) end)
+            end
+        end)
+        function row:Refresh()
+            dropdown:GenerateMenu()
+        end
+    else
+        local button = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        button:SetSize(DROPDOWN_WIDTH, 22)
+        button:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+        button:SetScript("OnClick", function()
+            local current = QCS.DB[option.key]
+            local index = 1
+            for i, entry in ipairs(option.values) do
+                if entry.value == current then index = i end
+            end
+            QCS.SetOption(option.key, option.values[index % #option.values + 1].value)
+        end)
+        function row:Refresh()
+            button:SetText(QCS.GetOptionValueLabel(option, QCS.DB[option.key]))
+        end
+    end
+    return row
+end
+
+-- Returns the icon, which the layout anchors; the title sits to its right.
+local function QCS_Popup_CreateSectionHeader(parent, section)
+    local icon = parent:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(HEADER_ICON_SIZE, HEADER_ICON_SIZE)
+    icon:SetTexture(section.icon)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon border
+
+    local header = parent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    header:SetPoint("LEFT", icon, "RIGHT", 6, 0)
+    header:SetText(section.title)
+
+    local line = parent:CreateTexture(nil, "ARTWORK")
+    line:SetColorTexture(1, 0.82, 0, 0.3)
+    line:SetHeight(1)
+    line:SetPoint("TOPLEFT", icon, "BOTTOMLEFT", 0, -3)
+    line:SetWidth(COLUMN_WIDTH - 10)
+    return icon
+end
+
+------------------------------------------------------------
+-- Layout
+------------------------------------------------------------
+local function QCS_Popup_BuildContent(frame)
+    local y = -CONTENT_TOP
+    for _, section in ipairs(QCS.OptionSections) do
+        local header = QCS_Popup_CreateSectionHeader(frame, section)
+        header:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING_X, y)
+        y = y - HEADER_HEIGHT
+
+        for _, option in ipairs(section.options) do
+            local control
+            if option.kind == "dropdown" then
+                control = QCS_Popup_CreateDropdown(frame, option)
+                control:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING_X, y)
+            else
+                control = QCS_Popup_CreateCheckbox(frame, option)
+                control:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING_X, y - 1)
+            end
+            control.option = option
+            controls[#controls + 1] = control
+            y = y - ROW_HEIGHT
+        end
+        y = y - SECTION_GAP
+    end
+
+    frame:SetSize(PADDING_X * 2 + COLUMN_WIDTH, -y + FOOTER_HEIGHT)
+end
+
+------------------------------------------------------------
+-- Window
+------------------------------------------------------------
+local function QCS_Popup_SavePosition(frame)
+    local point, _, relativePoint, x, y = frame:GetPoint(1)
+    QCS.DB.PopupPosition = { point, relativePoint, x, y }
+end
+
+local function QCS_Popup_RestorePosition(frame)
+    frame:ClearAllPoints()
+    local pos = QCS.DB.PopupPosition
+    if type(pos) == "table" and pos[1] then
+        frame:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    end
+end
+
+-- The portrait frame gives the Blizzard look (title bar, close button, round icon);
+-- fall back to simpler templates if a client lacks it.
+local function QCS_Popup_CreateFrame()
+    for _, template in ipairs({ "PortraitFrameTemplate", "BasicFrameTemplateWithInset" }) do
+        local ok, frame = pcall(CreateFrame, "Frame", POPUP_NAME, UIParent, template)
+        if ok and frame then
+            return frame
+        end
+    end
+    return CreateFrame("Frame", POPUP_NAME, UIParent, "BackdropTemplate")
+end
+
+local function QCS_Popup_RefreshControls()
+    for _, control in ipairs(controls) do
+        control:Refresh()
+    end
+end
+
+local function QCS_Popup_Create()
+    local frame = QCS_Popup_CreateFrame()
+    frame:Hide()
+    frame:SetFrameStrata("DIALOG")
+    frame:SetToplevel(true)
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        QCS_Popup_SavePosition(self)
+    end)
+
+    local title = "QuestCompleteSound"
+    if type(frame.SetTitle) == "function" then
+        frame:SetTitle(title)
+    elseif frame.TitleText then
+        frame.TitleText:SetText(title)
+    else
+        local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        titleText:SetPoint("TOP", frame, "TOP", 0, -8)
+        titleText:SetText(title)
+    end
+    if type(frame.SetPortraitToAsset) == "function" then
+        frame:SetPortraitToAsset(ICON)
+    end
+    if frame.SetBackdrop and not frame.CloseButton then
+        frame:SetBackdrop({
+            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            tile = true, tileSize = 32, edgeSize = 32,
+            insets = { left = 11, right = 12, top = 12, bottom = 11 },
+        })
+        local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+        close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -4)
+    end
+
+    local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -36)
+    subtitle:SetJustifyH("LEFT")
+
+    QCS_Popup_BuildContent(frame)
+
+    local version = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", PADDING_X, 16)
+    version:SetText("v" .. QCS.GetVersion() .. "  ·  /qcs help")
+
+    frame:SetScript("OnShow", function()
+        local text = "Worker voice lines for your quest progress.\nChanges apply immediately."
+        if QCS.IsSMoRGsQoLLoaded() then
+            text = text .. "\n|cffffd200SMoRG's QoL is loaded and plays these sounds instead.|r"
+        end
+        subtitle:SetText(text)
+        QCS_Popup_RefreshControls()
+    end)
+
+    -- Close with Escape.
+    if type(UISpecialFrames) == "table" then
+        table.insert(UISpecialFrames, POPUP_NAME)
+    end
+    return frame
+end
+
+------------------------------------------------------------
+-- Public API
+------------------------------------------------------------
+function QCS.OptionsPopup_Open()
+    if not QCS.DB then return end
+    if not popup then
+        popup = QCS_Popup_Create()
+    end
+    if not popup:IsShown() then
+        QCS_Popup_RestorePosition(popup)
+        popup:Show()
+    end
+end
+
+function QCS.OptionsPopup_Toggle()
+    if popup and popup:IsShown() then
+        popup:Hide()
+    else
+        QCS.OptionsPopup_Open()
+    end
+end
+
+-- Keep the window in sync when options change elsewhere (slash commands, reset).
+function QCS.OptionsPopup_Refresh()
+    if not popup or not popup:IsShown() then return end
+    QCS_Popup_RefreshControls()
+end

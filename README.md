@@ -1,38 +1,40 @@
 # 🧭 QuestCompleteSound (QCS)
 
-**QuestCompleteSound** makes your questing more immersive.  
-It plays a sound when a quest is ready to turn in — and can optionally color quest progress messages (like “7/8 Wolves Slain”) in **red → yellow → green** based on how close you are to completion.
+**QuestCompleteSound** lets you hear your quest progress: a worker voice line when you complete a quest objective, and another when the whole quest is done. That's all it does.
 
-I have made a new Addon called SMoRGs QoL. This will be my new primary Addon.
-Compatible only with **Retail**.
+Works in **Retail** and **WoW Forever**.
 
 ---
 
-## 🎵 Features
+## 📦 Moved to SMoRG's QoL
 
-🔔 **Quest Completion Sound**  
-Plays a sound when all objectives for a quest are complete.
-Toggle with `/qcs soundonly`, `/qcs so`.
+All the other settings have moved to my addon [**SMoRG's QoL**](https://www.curseforge.com/wow/addons/smorgsqol):
 
-🧩 **Quest Progress Colors**  
-Colors *quest-related UI messages* (e.g., “Boars slain: 4/8”) from red to green as you progress.  
-Toggle with `/qcs color`, `/qcs col`.
+- Quest progress colors
+- Automatic quest tracking
+- Hide completed achievements
+- Splash screen
+- Debug output
+- Chat messages when a quest is done
 
-📋 **Automatic Quest Tracking**  
-Automatically tracks newly accepted quests in your quest tracker.
-Toggle with `/qcs autotrack`, `/qcs at`.  
+SMoRG's QoL plays the same sounds, so you only need one of the addons. If both are loaded, QCS stays silent so you don't hear every sound twice.
 
-📋 **Hide completed Achievements**  
-Always hide your completed Achievements in the Achievements Frame.
-Toggle with `/qcs hideach`, `/qcs ha`.  
+---
 
-🪄 **Splash Screen & Help**  
-Shows version, AutoTrack, and colorization state at login or via  
-`/qcs splash`.
+## 🎵 Sounds
 
-🧪 **Debug & Reset Tools**  
-`/qcs debugtrack` – shows detailed tracking debug messages  
-`/qcs reset` – resets all settings to default
+| Profile | Objective complete | Quest complete |
+|----------|--------------|--------------|
+| **Horde (Peon)** (default) | "Work, work." | "Work complete." |
+| **Alliance (Human worker)** | "More work?" | "Job's done!" |
+
+When the last objective of a quest is completed, you only hear the quest complete sound.
+
+---
+
+## 🪟 Options Window
+
+Turn the sounds on or off and choose the sound profile in the options window. Open it from the addon compartment menu at the minimap, the button under **Options → AddOns**, or with `/qcs config`.
 
 ---
 
@@ -40,17 +42,12 @@ Shows version, AutoTrack, and colorization state at login or via
 
 | Command | Description |
 |----------|--------------|
-| `/qcs soundonly` | Toggle sound-only mode |
-| `/qcs so` | Shorthand for soundonly |
-| `/qcs autotrack` | Toggle current autotrack state |
-| `/qcs at` | Shorthand for autotrack |
-| `/qcs color` | Toggle progress colorization |
-| `/qcs col` | Shorthand for color |
-| `/qcs hideach` | Toggle hiding completed achievements |
-| `/qcs ha` | Shorthand for hideach |
-| `/qcs splash` | Toggle or disable splash screen on login |
-| `/qcs debugtrack` | Toggle detailed tracking debug output |
-| `/qcs dbg` | Shorthand for debugtrack |
+| `/qcs questsound` | Toggle the quest completion sound |
+| `/qcs qs` | Shorthand for questsound |
+| `/qcs objectivesound` | Toggle the objective completion sound |
+| `/qcs os` | Shorthand for objectivesound |
+| `/qcs soundprofile` | Switch between the Horde and Alliance sounds |
+| `/qcs config` | Open the options window |
 | `/qcs reset` | Reset all settings to defaults |
 | `/qcs help` | Display command overview |
 
@@ -58,23 +55,11 @@ Shows version, AutoTrack, and colorization state at login or via
 
 ## 💾 Saved Variables
 
-Your settings persist between sessions via these variables:
+Your settings persist between sessions in `QCS_DB`:
 
 | Variable | Purpose |
 |-----------|----------|
-| `QCS_DB` | Now contains the following variables |
-| `AutoTrack` | Automatically track newly accepted quests |
-| `DebugTrack` | Enable detailed debug logging |
-| `ShowSplash` | Show splash screen at login |
-| `ColorProgress` | Color quest progress messages (red → green) |
-| `HideDoneAchievements` | Show or Hide completed achievements |
-| `SoundOnly` | Turn on or off Sound Only |
-
----
-
-## 🧠 Notes
-
-- The Blizzard tracker limit of **25 quests** still applies — new quests can’t be added automatically beyond that.  
-- You can safely toggle features on/off at any time.  
-- Sound and colorization features work independently — use one or both.  
-- Only compatible with **Retail**.
+| `QuestCompleteSound` | Play a sound when a whole quest is done |
+| `QuestObjectiveSound` | Play a sound when a quest objective is completed |
+| `QuestSoundProfile` | `Horde` or `Alliance` |
+| `PopupPosition` | Where you moved the options window |
